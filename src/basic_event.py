@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 
 class BasicEvent:
@@ -8,6 +9,29 @@ class BasicEvent:
         self.event_name = event_name
         self.project_name = project_name
         self.analysis_type = analysis_type
+
+    def create_bed_file(self):
+        if self.event_name.islower():
+            return f"Error: Event name ({self.event_name}) should be capitalized."
+
+        output_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "output", "general")
+        os.makedirs(output_directory, exist_ok=True)
+        file_path = os.path.join(output_directory, "basic_event.BED")
+
+        if not os.path.exists(file_path):
+            with open(file_path, 'w') as file:
+                file.write("Project Name=\n* Name             , Descriptions, A, Analysis Type, Phase Type\n")
+
+        content = f"{self.event_name.upper():<16}, {self.event_description}, , {self.analysis_type.upper()}, \n"
+        if self.is_event_duplicated(file_path,event.event_name):
+            return f"Warning: Event '{self.event_name}' is duplicated. Skipping..."
+
+        content = f"{self.event_name.upper():<16}, {self.event_description}, , {self.analysis_type.upper()}, \n"
+
+        with open(file_path, 'a') as file:
+            file.write(content)
+
+        return f"{file_path} created/updated successfully."
 
     @classmethod
     def from_csv(cls, csv_file):
@@ -38,15 +62,42 @@ class BasicEvent:
         return parameters
 
 
+    @staticmethod
+    def is_event_duplicated(file_path, event_name):
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+            event_names = [line.split(',')[0].strip() for line in lines[2:]]  # Exclude the header lines
+            return any(event_name.upper() == line.strip().split(',')[0].strip() for line in lines[2:])
 
-csv_file = 'events.csv'  # Replace with the path to your CSV file
+
+    def create_bei_file(self):
+        # Code to create .BEI file
+        file_name = f"{self.event_name}.BEI"
+        # Write contents to the .BEI file
+
+    def create_bec_file(self):
+        # Code to create .BEC file
+        file_name = f"{self.event_name}.BEC"
+        # Write contents to the .BEC file
+
+    def create_unused_file_extension(self):
+        # Code to create unused file extension
+        file_name = f"{self.event_name}.XXX"
+        # Write contents to the .XXX file
+
+
+
+
+
+
+
+
+
+csv_file = 'events.csv'
 events = BasicEvent.from_csv(csv_file)
 
-# Accessing event attributes
+
+
 for event in events:
-    print(event.event_description)
-    print(event.phase_type)
-    print(event.probability_parameters)
-    print(event.event_name)
-    print(event.project_name)
-    print(event.analysis_type)
+    result = event.create_bed_file()
+    print(result)
