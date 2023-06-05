@@ -4,14 +4,23 @@ import math
 from  prob_calc import failure_calc
 
 class BasicEvent:
-    def __init__(self, event_description, phase_type, probability_parameters, event_name, project_name, analysis_type):
+    def __init__(self, event_description, phase_type, probability_parameters, event_name, project_name, analysis_type,Lambda,tau,prob,mission,UdC,FdT,UdValue,init,PF,Freq):
         self.event_description = event_description
         self.phase_type = phase_type
         self.probability_parameters = probability_parameters
         self.event_name = event_name
         self.project_name = project_name
         self.analysis_type = analysis_type
-
+        self.Lambda = Lambda
+        self.tau = tau
+        self.prob = prob
+        self.mission = mission
+        self.UdC = UdC
+        self.FdT =FdT
+        self.UdValue = UdValue
+        self.init = init
+        self.PF = PF
+        self.Freq = Freq
 
     def create_bed_file(self):
         if self.event_name.islower():
@@ -42,11 +51,21 @@ class BasicEvent:
         for _, row in df.iterrows():
             event_description = row['Event description']
             phase_type = row['Phase Type']
-            probability_parameters = cls.get_probability_parameters(row)
             event_name = row['Event name']
             project_name = row['Project']
             analysis_type = row['Analysis type']
-            event = cls(event_description, phase_type, probability_parameters, event_name, project_name, analysis_type)
+            Lambda =float(row['Lambda'])
+            tau = float(row['Tau'])
+            prob = float(row['Prob'])
+            mission= float(row['Mission'])
+            FdT = row['FdT']
+            UdC= row['UdC']
+            UdValue = row["UdValue"]
+            init = row['Init']
+            PF = row["PF"]
+            Freq = row["Freq"]
+
+            event = cls(event_description, phase_type, event_name, project_name, analysis_type,Lambda,tau,mission,prob,UdC,FdT,UdValue,init,PF,Freq)
             events.append(event)
         return events
 
@@ -119,7 +138,8 @@ class BasicEvent:
 csv_file = 'events.csv'
 events = BasicEvent.from_csv(csv_file)
 
-
+for event in events:
+    print(event.get_probability_parameters(event))
 
 for event in events:
     print(event)
