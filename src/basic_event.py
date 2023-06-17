@@ -1,30 +1,26 @@
-import os
-import pandas as pd
-import math
-from  prob_calc import failure_calc
+from imports import *
 
 class BasicEvent:
-    def __init__(self, event_description, phase_type, probability_parameters, event_name, project_name, analysis_type,Lambda,tau,prob,mission,UdC,FdT,UdValue,init,PF,Freq):
+    def __init__(self, event_description, phase_type, probability_parameters, event_name, project_name, analysis_type,Lambda,tau,prob,mission,UdC,FdT,UdValue,UdValue2,init,PF,Freq):
         self.event_description = event_description
         self.phase_type = phase_type
         self.probability_parameters = probability_parameters
         self.event_name = event_name
         self.project_name = project_name
-        self.analysis_type = analysis_type
-        self.Lambda = Lambda
-        self.tau = tau
-        self.prob = prob
-        self.mission = mission
-        self.UdC = UdC
-        self.FdT =FdT
-        self.UdValue = UdValue
-        self.init = init
-        self.PF = PF
-        self.Freq = Freq
+        self.analysis_type = analysis_type  #
+        self.Lambda = Lambda       # Basic event failure rate per hr
+        self.tau = tau             # Time to repair in hours
+        self.prob = prob           # Probability value
+        self.mission = mission     # Mission time
+        self.UdC = UdC             # Uncertainty correlation class
+        self.FdT =FdT              # Failure Calculation type
+        self.UdValue = UdValue     # Uncertainty distribution value
+        self.UdValue2 = UdValue2
+        self.init = init   # Initiating event flag (Y/N)
+        self.PF = PF  # Process Flag
+        self.Freq = Freq   # Frequency Unit
 
     def create_bed_file(self):
-        if self.event_name.islower():
-            return f"Error: Event name ({self.event_name}) should be capitalized."
 
         output_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "output", "general")
         os.makedirs(output_directory, exist_ok=True)
@@ -90,10 +86,8 @@ class BasicEvent:
             event_names = [line.split(',')[0].strip() for line in lines[2:]]  # Exclude the header lines
             return any(event_name.upper() == line.strip().split(',')[0].strip() for line in lines[2:])
 
-    def create_bei_file(self,row):
-        param = BasicEvent.get_probability_parameters(row)
-        if self.event_name.islower():
-            return f"Error: Event name ({self.event_name}) should be capitalized."
+    def create_bei_file(self):
+
 
         output_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "output",
                                         "general")
@@ -104,7 +98,7 @@ class BasicEvent:
             with open(file_path, 'w') as file:
 
                 file.write(f"Project Name= {self.project_name}\n*  Name ,FdT,UdC   ,UdT, UdValue,   Prob,       Lambda,     Tau,        Mission, Init,PF, UdValue2,   Calc. Prob, Freq, Analysis Type        , Phase Type              , Project\n")
-        content = f"{self.event_name.upper():<16}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{self.Lambda}, {self.Tau}, {self.Mission},{self.Init},{self.PF},{self.UdValue2},{self.Calc.Prob},{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name} \n "
+        content = f"{self.event_name.upper():<16}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{self.Lambda}, {self.Tau}, {self.Mission},{self.Init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name} \n "
 
 
         if self.is_event_duplicated(file_path, self.event_name):
@@ -135,13 +129,3 @@ class BasicEvent:
 
 
 
-csv_file = 'events.csv'
-events = BasicEvent.from_csv(csv_file)
-
-for event in events:
-    print(event.get_probability_parameters(event))
-
-for event in events:
-    print(event)
-    result = event.create_bed_file()
-    print(result)
