@@ -8,8 +8,6 @@ json_file_path = "/Users/akram/Development/multi-hazard-pra-model-generator/inpu
 output_dir = "/Users/akram/Development/multi-hazard-pra-model-generator/output/general"
 
 seismic_event_info = SeismicEvent.from_input_file(json_file_path)
-print(seismic_event_info.aftershocks_params["mission"])
-
 
 
 events=SeismicEvent.from_csv(seismic_event_info.input_params["path"],seismic_event_info.input_params["name"])

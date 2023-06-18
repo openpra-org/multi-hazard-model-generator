@@ -44,9 +44,7 @@ class SeismicEvent(BaseEvent):
 
         return f"{file_path} created/updated successfully."
 
-
-
-    def create_bed_file(self, output_directory,JSON_input):
+    def create_bed_file(self, output_directory, JSON_input):
         file_path = os.path.join(output_directory, "seismic_event.BED")  # BED file path
 
         # Call from_input_file method to get the mainshock and aftershock events parameters
@@ -56,15 +54,31 @@ class SeismicEvent(BaseEvent):
         aftershocks_params = seismic_event_info.aftershocks_params
         mainshock_params = seismic_event_info.mainshock_params
 
+        num_mainshock_intervals = mainshock_params["num"]
+        correlation = mainshock_params["correlation"]
 
         if not os.path.exists(file_path):
             with open(file_path, 'w') as file:
                 file.write(f"{self.project_name}=\n*Name         , Descriptions, Project\n")
 
-        content = f"{self.event_name} ,   {self.event_description},  {self.project_name}\n"
-
+        content = ""
         if self.is_event_duplicated(file_path, self.event_name):
             return f"Warning: Event '{self.event_name}' is duplicated. Skipping..."
+
+        if correlation == "No":
+            count = int(self.count)
+            for i in range(1, count + 1):
+                for j in range(1, num_mainshock_intervals + 1):
+                    event_name_with_bin = f"{self.event_name}-MS-{j}-{chr(64 + i)}".upper()
+                    event_description_with_bin = f"{self.event_description}-{chr(64 + i)} Mainshock Bin-{j}".upper()
+                    content += f"{event_name_with_bin}, {event_description_with_bin}, {self.project_name}\n"
+        else:
+            for i in range(1, num_mainshock_intervals + 1):
+                event_name_with_bin = f"{self.event_name}-MS-{i}"
+                event_description_with_bin = f"{self.event_description} Mainshock Bin-{i}"
+                content += f"{event_name_with_bin}, {event_description_with_bin}, {self.project_name}\n"
+
+
 
         with open(file_path, 'a') as file:
             file.write(content)
