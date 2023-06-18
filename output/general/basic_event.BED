@@ -1,0 +1,10 @@
+G-PWR=
+*Name         , Descriptions, Project
+MDP-A-FTS        ,   MOTOR DRIVEN PUMP A FAILS TO START,  G-PWR
+CKV-B-FTO        ,   CHECK VALVE  FAILS TO OPEN,  G-PWR
+ACC              ,   Accumulator Tank Fails,  G-PWR
+EQ-HE-3          ,   SEISMIC BIN 3 EVENT HAPPENS,  G-PWR
+FB-HRA           ,   OPERATORS INITIATE FEED AND BLEED,  G-PWR
+
+3 ,   Seismic Failure of Motor Driven Pump,  3
+3 ,   Seismic Failure of Auxilary Feedwater Pump,  3

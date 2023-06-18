@@ -1,24 +1,9 @@
 from imports import *
+from base_event import BaseEvent
+class BasicEvent(BaseEvent):
+    def __init__(self):
 
-class BasicEvent:
-    def __init__(self, event_description, phase_type, probability_parameters, event_name, project_name, analysis_type,Lambda,tau,prob,mission,UdC,FdT,UdValue,UdValue2,init,PF,Freq):
-        self.event_description = event_description
-        self.phase_type = phase_type
-        self.probability_parameters = probability_parameters
-        self.event_name = event_name
-        self.project_name = project_name
-        self.analysis_type = analysis_type  #
-        self.Lambda = Lambda       # Basic event failure rate per hr
-        self.tau = tau             # Time to repair in hours
-        self.prob = prob           # Probability value
-        self.mission = mission     # Mission time
-        self.UdC = UdC             # Uncertainty correlation class
-        self.FdT =FdT              # Failure Calculation type
-        self.UdValue = UdValue     # Uncertainty distribution value
-        self.UdValue2 = UdValue2
-        self.init = init   # Initiating event flag (Y/N)
-        self.PF = PF  # Process Flag
-        self.Freq = Freq   # Frequency Unit
+        super().__init__()
 
     def create_bed_file(self):
 

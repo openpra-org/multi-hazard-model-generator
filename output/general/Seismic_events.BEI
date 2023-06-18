@@ -1,0 +1,5 @@
+Project Name= G-PWR
+*  Name ,FdT,UdC   ,UdT, UdValue,   Prob,       Lambda,     Tau,        Mission, Init,PF, UdValue2,   Calc. Prob, Freq, Analysis Type   , Phase Type   , Project
+MDP             , J, , S,0.3,0.7,R, 0, 24,,,0.25, ,Y, CD      ,4, G-PWR 
+ TDP             , J, , S,0.35,0.7,R, 0, 24,,,0.25, ,Y, CD      ,3, G-PWR 
+ 

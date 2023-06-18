@@ -1,0 +1,6 @@
+﻿Event name,Event description,FdT,UdC,UdT,UdValue,Prob,Lambda,Tau,Mission,Init,PF,UdValue2,Calc. Prob,Freq,Analysis type,Phase Type,Project
+MDP-A-FTS,MOTOR DRIVEN PUMP A FAILS TO START,5,0.2,0.0003,0.2,0.11,0.4,0.2,24,,,,,,RANDOM, CD      ,G-PWR
+CKV-B-FTO,CHECK VALVE  FAILS TO OPEN,7,0.1,0.22,0.1,0.11,0.4,,24,,,,,,RANDOM, CD      ,G-PWR
+ACC,Accumulator Tank Fails,E,0.1,0.22,0.1,0.11,0.4,,24,,,,,,RANDOM, CD      ,G-PWR
+EQ-HE-3,SEISMIC BIN 3 EVENT HAPPENS,F,0.2,0.0003,0.2,0.11,0.4,,24,,,,,,RANDOM, CD      ,G-PWR
+FB-HRA,OPERATORS INITIATE FEED AND BLEED,1,                                                 ,  ,0.00E+00,4.00E-01,0.00E+00,0.00E+00,0.00E+00,  ,  ,0.00E+00,4.00E-01, Y, RANDOM                                          , CD      ,G-PWR
