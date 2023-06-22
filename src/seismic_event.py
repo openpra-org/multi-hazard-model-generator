@@ -4,45 +4,88 @@ from base_event import BaseEvent
 class SeismicEvent(BaseEvent):
     def __init__(self, event_description="", phase_type="", probability_parameters=None,
                  event_name="", project_name="", analysis_type="", Lambda=0, tau=0, prob=0,
-                 mission=0, UdC=0, FdT=0, UdValue=0, UdValue2=0, init=0, PF=0, Freq=0,
+                 mission=0, UdC="", FdT=0, UdValue=0, UdValue2=0, init=0, PF=0, Freq=0, Tau = 0,
                  beta_u=0, beta_r=0, a_m=0, building="", floor=0, elevation=0, area="",
                  count=0, seismic_fire="", seismic_flooding="", peak_ground_accel=0):
         super().__init__(event_description, phase_type, probability_parameters,
                          event_name, project_name, analysis_type, Lambda, tau, prob,
-                         mission, UdC, FdT, UdValue, UdValue2, init, PF, Freq, beta_u,
+                         mission, UdC, FdT, UdValue, UdValue2, init, PF, Freq,Tau ,beta_u,
                          beta_r, a_m, building, floor, elevation, area, count,
                          seismic_fire, seismic_flooding, peak_ground_accel)
         self.aftershocks_params = None
         self.mainshock_params = None
 
-
-    def create_bei_file(self,PF = "", Freq ="Y"):
+    def create_bei_file(self, output_directory, JSON_input):
         self.FdT = "J"
         self.UdT = "S"
+        self.PF = ""
+        self.Freq = "Y"
         self.Udc = ""
         self.UdValue = self.beta_r
         self.prob = self.a_m
         self.UdValue2 = self.beta_u
-        self.Lambda = self.peak_ground_accel[0]
-        self.PF = PF
-        self.Freq = Freq
-        output_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "output",
-                                        "general")
+
+        # Call from_input_file method to get the mainshock and aftershock events parameters
+        seismic_event_info = SeismicEvent.from_input_file(JSON_input)
+
+        # Access the parameters from the seismic_event object
+        aftershocks_params = seismic_event_info.aftershocks_params
+        consider_aftershocks = aftershocks_params["consider_aftershocks"]
+
+
+
+        mainshock_params = seismic_event_info.mainshock_params
+        num_mainshock_intervals = mainshock_params["num"]
+        mainshock_accel = mainshock_params["MS_vector"]
+
         os.makedirs(output_directory, exist_ok=True)
         file_path = os.path.join(output_directory, "Seismic_events.BEI")
-        print(self.phase_type)
+
         if not os.path.exists(file_path):
             with open(file_path, 'w') as file:
-                file.write(f"Project Name= {self.project_name}\n*  Name ,FdT,UdC   ,UdT, UdValue,   Prob,       Lambda,     Tau,        Mission, Init,PF, UdValue2,   Calc. Prob, Freq, Analysis Type   , Phase Type   , Project\n")
-        content = f"{self.event_name.upper():<16}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{self.Lambda}, {self.Tau}, {self.Mission},{self.Init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name} \n "
-
-        if self.is_event_duplicated(file_path, self.event_name):
-            return f"Warning: Event '{self.event_name}' is duplicated. Skipping..."
-
+                file.write(
+                    f"Project Name= {self.project_name}\n*  Name ,FdT,UdC   ,UdT, UdValue,   Prob,       Lambda,     Tau,        Mission, Init,PF, UdValue2,   Calc. Prob, Freq, Analysis Type   , Phase Type   , Project\n")
         with open(file_path, 'a') as file:
-            file.write(content)
 
-        return f"{file_path} created/updated successfully."
+            if mainshock_params["correlation"] == "No":
+                self.write_mainshock_basic_events(file, num_mainshock_intervals,mainshock_accel,self.count)
+            else:
+                self.write_mainshock_basic_events(file, num_mainshock_intervals,mainshock_accel)
+
+            if consider_aftershocks == "Yes":
+                if mainshock_params["correlation"] == "No":
+                    self.write_aftershock_basic_events(file, aftershocks_params,self.count)
+                else:
+                    self.write_aftershock_basic_events(file, aftershocks_params)
+
+
+
+    def write_mainshock_basic_events(self, file, num_mainshock_intervals, mainshock_accel, count=1):
+
+        content = ""
+        for event_count in range(1, count + 1):
+            event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
+            for mainshock_bin in range(1, num_mainshock_intervals + 1):
+                event_name = f"{self.event_name}-MS-{mainshock_bin}{event_count_str}".upper()
+                content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{mainshock_accel[mainshock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+
+        file.write(content)
+
+    def write_aftershock_basic_events(self, file, aftershocks_params,count = 1):
+
+
+        num_aftershocks = aftershocks_params["num"]
+        aftershock_accel = aftershocks_params["vector"]
+        content = ""
+        for event_count in range(1, count + 1):
+            event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
+            for aftershock_bin in range(1, num_aftershocks + 1):
+                event_name = f"{self.event_name}-AS-{aftershock_bin}{event_count_str}".upper()
+                content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{aftershock_accel[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+
+        file.write(content)
+
+
 
     def create_bed_file(self, output_directory, JSON_input):
         file_path = os.path.join(output_directory, "seismic_event.BED")  # BED file path

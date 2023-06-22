@@ -1,6 +1,0 @@
-G-PWR=
-*Name         , Descriptions, Project,
-MDP-A-FTS       , MOTOR DRIVEN PUMP A FAILS TO START,G-PWR
-CKV-B-FTO       , CHECK VALVE  FAILS TO OPEN,G-PWR
-ACC             , Accumulator Tank Fails,G-PWR
-EQ-HE-3         , SEISMIC BIN 3 EVENT HAPPENS,G-PWR

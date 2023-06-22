@@ -14,3 +14,4 @@ events=SeismicEvent.from_csv(seismic_event_info.input_params["path"],seismic_eve
 
 for event in events:
     event.create_bed_file(output_dir,json_file_path)
+    event.create_bei_file(output_dir, json_file_path)

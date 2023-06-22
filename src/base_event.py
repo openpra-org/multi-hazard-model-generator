@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class BaseEvent(ABC):
     def __init__(self, event_description, phase_type, probability_parameters, event_name, project_name, analysis_type,
-                 Lambda, tau, prob, mission, UdC, FdT, UdValue, UdValue2, init, PF, Freq,  beta_u, beta_r, a_m, building, floor, elevation, area, count,
+                 Lambda, tau, prob, mission, UdC, FdT, UdValue, UdValue2, init, PF, Freq, Tau, beta_u, beta_r, a_m, building, floor, elevation, area, count,
                  seismic_fire,seismic_flooding,peak_ground_accel):
         self.event_description = event_description
         self.phase_type = phase_type
@@ -22,6 +22,7 @@ class BaseEvent(ABC):
         self.init = init  # Initiating event flag (Y/N)
         self.PF = PF  # Process Flag
         self.Freq = Freq  # Frequency Unit
+        self.Tau = Tau
 
         self.beta_u = beta_u
         self.beta_r = beta_r
