@@ -1,9 +1,17 @@
 from imports import *
 from base_event import BaseEvent
 class BasicEvent(BaseEvent):
-    def __init__(self):
-
-        super().__init__()
+    def __init__(self, event_description="", phase_type="", probability_parameters=None,
+                 event_name="", project_name="", analysis_type="", Lambda=0, tau=0, prob=0,
+                 mission=0, UdC="", FdT=0, UdValue=0, UdValue2=0, init=0, PF=0, Freq=0, Tau=0,
+                 beta_u=0, beta_r=0, a_m=0, building="", floor=0, elevation=0, area="",
+                 count=0, seismic_fire="", seismic_flooding="", peak_ground_accel=0):
+        super().__init__(event_description, phase_type, probability_parameters,
+                         event_name, project_name, analysis_type, Lambda, tau, prob,
+                         mission, UdC, FdT, UdValue, UdValue2, init, PF, Freq, Tau, beta_u,
+                         beta_r, a_m, building, floor, elevation, area, count,
+                         seismic_fire, seismic_flooding, peak_ground_accel)
+        self.aftershocks_params = None
 
     def create_bed_file(self):
 

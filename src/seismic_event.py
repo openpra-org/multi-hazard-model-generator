@@ -61,29 +61,55 @@ class SeismicEvent(BaseEvent):
 
 
     def write_mainshock_basic_events(self, file, num_mainshock_intervals, mainshock_accel, count=1):
+        _, file_extension = os.path.splitext(file.name)
+        if file_extension.upper() == ".BEI":
+            content = ""
+            for event_count in range(1, count + 1):
+                event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
+                for mainshock_bin in range(1, num_mainshock_intervals + 1):
+                    event_name = f"{self.event_name}-MS-{mainshock_bin}{event_count_str}".upper()
+                    content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{mainshock_accel[mainshock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
 
-        content = ""
-        for event_count in range(1, count + 1):
-            event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
-            for mainshock_bin in range(1, num_mainshock_intervals + 1):
-                event_name = f"{self.event_name}-MS-{mainshock_bin}{event_count_str}".upper()
-                content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{mainshock_accel[mainshock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+            file.write(content)
 
-        file.write(content)
+        elif file_extension.upper() == ".BED":
+            content = ""
 
+            for event_count in range(1, count + 1):
+                event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
+
+                for mainshock_bin in range(1, num_mainshock_intervals + 1):
+                    event_name = f"{self.event_name}-MS-{mainshock_bin}{event_count_str}".upper()
+                    event_description_with_bin = f"{self.event_description} Mainshock Bin-{mainshock_bin}{event_count_str}"
+                    content += f"{event_name},{event_description_with_bin}, {self.project_name}\n"
+            file.write(content)
     def write_aftershock_basic_events(self, file, aftershocks_params,count = 1):
-
-
         num_aftershocks = aftershocks_params["num"]
-        aftershock_accel = aftershocks_params["vector"]
-        content = ""
-        for event_count in range(1, count + 1):
-            event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
-            for aftershock_bin in range(1, num_aftershocks + 1):
-                event_name = f"{self.event_name}-AS-{aftershock_bin}{event_count_str}".upper()
-                content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{aftershock_accel[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+        _, file_extension = os.path.splitext(file.name)
+        if file_extension.upper() == ".BEI":
 
-        file.write(content)
+
+            aftershock_accel = aftershocks_params["vector"]
+            content = ""
+            for event_count in range(1, count + 1):
+                event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
+                for aftershock_bin in range(1, num_aftershocks + 1):
+                    event_name = f"{self.event_name}-AS-{aftershock_bin}{event_count_str}".upper()
+                    content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{aftershock_accel[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+
+            file.write(content)
+
+        elif file_extension.upper() == ".BED":
+            content = ""
+
+            for event_count in range(1, count + 1):
+                event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
+
+                for aftershock_bin in range(1, num_aftershocks + 1):
+                    event_name = f"{self.event_name}-AS-{aftershock_bin}{event_count_str}".upper()
+                    event_description_with_bin = f"{self.event_description} Aftershock Bin-{aftershock_bin}{event_count_str}"
+                    content += f"{event_name},{event_description_with_bin}, {self.project_name}\n"
+            file.write(content)
 
 
 
@@ -95,38 +121,27 @@ class SeismicEvent(BaseEvent):
 
         # Access the parameters from the seismic_event object
         aftershocks_params = seismic_event_info.aftershocks_params
+        consider_aftershocks = aftershocks_params["consider_aftershocks"]
         mainshock_params = seismic_event_info.mainshock_params
-
         num_mainshock_intervals = mainshock_params["num"]
-        correlation = mainshock_params["correlation"]
+        mainshock_accel = mainshock_params["MS_vector"]
 
         if not os.path.exists(file_path):
             with open(file_path, 'w') as file:
                 file.write(f"{self.project_name}=\n*Name         , Descriptions, Project\n")
 
-        content = ""
-        if self.is_event_duplicated(file_path, self.event_name):
-            return f"Warning: Event '{self.event_name}' is duplicated. Skipping..."
-
-        if correlation == "No":
-            count = int(self.count)
-            for i in range(1, count + 1):
-                for j in range(1, num_mainshock_intervals + 1):
-                    event_name_with_bin = f"{self.event_name}-MS-{j}-{chr(64 + i)}".upper()
-                    event_description_with_bin = f"{self.event_description}-{chr(64 + i)} Mainshock Bin-{j}".upper()
-                    content += f"{event_name_with_bin}, {event_description_with_bin}, {self.project_name}\n"
-        else:
-            for i in range(1, num_mainshock_intervals + 1):
-                event_name_with_bin = f"{self.event_name}-MS-{i}"
-                event_description_with_bin = f"{self.event_description} Mainshock Bin-{i}"
-                content += f"{event_name_with_bin}, {event_description_with_bin}, {self.project_name}\n"
-
-
-
         with open(file_path, 'a') as file:
-            file.write(content)
 
-        return f"{file_path} created/updated successfully."
+            if mainshock_params["correlation"] == "No":
+                self.write_mainshock_basic_events(file, num_mainshock_intervals, mainshock_accel, self.count)
+            else:
+                self.write_mainshock_basic_events(file, num_mainshock_intervals, mainshock_accel)
+
+            if consider_aftershocks == "Yes":
+                if mainshock_params["correlation"] == "No":
+                    self.write_aftershock_basic_events(file, aftershocks_params, self.count)
+                else:
+                    self.write_aftershock_basic_events(file, aftershocks_params)
 
     @staticmethod
     def is_event_duplicated(file_path, event_name): # Checking if an event was duplicated
