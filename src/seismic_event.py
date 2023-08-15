@@ -6,12 +6,12 @@ class SeismicEvent(BaseEvent):
                  event_name="", project_name="", analysis_type="", Lambda=0, tau=0, prob=0,
                  mission=0, UdC="", FdT=0, UdValue=0, UdValue2=0, init=0, PF=0, Freq=0, Tau = 0,
                  beta_u=0, beta_r=0, a_m=0, building="", floor=0, elevation=0, area="",
-                 count=0, seismic_fire="", seismic_flooding="", peak_ground_accel=0):
+                 count=0, seismic_fire="", seismic_flooding="", peak_ground_accel=0,start_time= 0, end_time =24):
         super().__init__(event_description, phase_type, probability_parameters,
                          event_name, project_name, analysis_type, Lambda, tau, prob,
                          mission, UdC, FdT, UdValue, UdValue2, init, PF, Freq,Tau ,beta_u,
                          beta_r, a_m, building, floor, elevation, area, count,
-                         seismic_fire, seismic_flooding, peak_ground_accel)
+                         seismic_fire, seismic_flooding, peak_ground_accel,start_time,end_time)
         self.aftershocks_params = None
         self.mainshock_params = None
 
@@ -37,7 +37,7 @@ class SeismicEvent(BaseEvent):
         mainshock_params = seismic_event_info.mainshock_params
         num_mainshock_intervals = mainshock_params["num"]
         mainshock_accel = mainshock_params["MS_vector"]
-
+        print(mainshock_accel)
         os.makedirs(output_directory, exist_ok=True)
         file_path = os.path.join(output_directory, "Seismic_events.BEI")
 
@@ -83,21 +83,27 @@ class SeismicEvent(BaseEvent):
                     event_description_with_bin = f"{self.event_description} Mainshock Bin-{mainshock_bin}{event_count_str}"
                     content += f"{event_name},{event_description_with_bin}, {self.project_name}\n"
             file.write(content)
-    def write_aftershock_basic_events(self, file, aftershocks_params,count = 1):
+    def write_aftershock_basic_events(self, file, aftershocks_params,mainshock_accel,count = 1):
         num_aftershocks = aftershocks_params["num"]
+        delta_T=aftershocks_params["dt"]  # aftershock time interval
+
         _, file_extension = os.path.splitext(file.name)
         if file_extension.upper() == ".BEI":
+            for mainshock_PGA in mainshock_accel:
+
+                for S in range(self.start_time, self.end_time, delta_T):
+
+                    number_aftershocks, aftershock_accel = self.mean_aftershocks_number(aftershocks_params, mainshock_PGA,S,S+delta_T)
+
+                    content = ""
+                    for event_count in range(1, count + 1):
+                        event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
+                        for aftershock_bin in range(1, len(aftershock_accel) + 1):
+                            event_name = f"{self.event_name}-AS-{aftershock_bin}{event_count_str}".upper()
+                            content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{aftershock_accel[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
 
 
-            aftershock_accel = aftershocks_params["vector"]
-            content = ""
-            for event_count in range(1, count + 1):
-                event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
-                for aftershock_bin in range(1, num_aftershocks + 1):
-                    event_name = f"{self.event_name}-AS-{aftershock_bin}{event_count_str}".upper()
-                    content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{aftershock_accel[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
-
-            file.write(content)
+                file.write(content)
 
         elif file_extension.upper() == ".BED":
             content = ""
@@ -155,6 +161,29 @@ class SeismicEvent(BaseEvent):
         pass
 
 
+    def mean_aftershocks_number(self,aftershocks_params,mainshock_PGA,S,E):
+
+        a = aftershocks_params["AF_arrival_params"]["a"]  # Read 'a' from aftershock_params
+        b = aftershocks_params["AF_arrival_params"]["b"]  # Read 'b' from aftershock_params
+        c = aftershocks_params["AF_arrival_params"]["c"]  # Read 'c' from aftershock_params
+        p = aftershocks_params["AF_arrival_params"]["p"]  # Read 'p' from aftershock_params
+        alpha = aftershocks_params["AF_arrival_params"]["alpha"]  # Read 'alpha' from aftershock_params
+        aftershocks_acceleration_vector = aftershocks_params["vector"]  # Use the aftershock vector from aftershock_params
+
+        number_aftershocks = [
+            ((10) ** a) * ((mainshock_PGA / aftershock_PGA) ** (alpha * b)) * (1 / (1 - p)) * (
+                        (E + c) ** (1 - p) - (S + c) ** (1 - p))
+            for aftershock_PGA in aftershocks_acceleration_vector
+        ]
+
+        return number_aftershocks, np.sqrt(aftershocks_acceleration_vector[:-1] * aftershocks_acceleration_vector[1:])
+
+
+
+
+
+
+
 
 
 
@@ -181,9 +210,13 @@ class SeismicEvent(BaseEvent):
             event.analysis_type = row['Analysis type']
             event.phase_type = row['Phase Type']
             event.project_name = row['Project']
+            event.start_time= float(row["Start"])
+            event.end_time = float(row["End"])
 
             events.append(event)
         return events
+
+
 
 
 

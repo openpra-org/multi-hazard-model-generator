@@ -1,4 +1,4 @@
-﻿Event name,Event description,BetaR,BetaU,Prob,Am,Building,count,Floor,Elevation,Area,Seismic fire?,Seismic flooding?,Analysis type,Phase Type,Project
-MDP,Motor Driven Pump,3.00E-01,2.50E-01,1.20E+00,7.00E-01,Aux,4,2.00E+00,1.10E+01,"A, B, C",Yes,No,RANDOM, CD      ,G-PWR
-TDP,Auxilary Feedwater Pump,3.50E-01,2.50E-01,7.00E-01,7.00E-01,Aux,3,2.00E+00,1.10E+01,A,Yes,No,RANDOM, CD      ,G-PWR
-MDP,Auxilary Feedwater Pump,3.50E-01,2.50E-01,7.00E-01,7.00E-01,Aux,3,2.00E+00,1.10E+01,A,Yes,No,RANDOM, CD      ,G-PWR
+﻿Event name,Event description,BetaR,BetaU,Prob,Am,Building,count,Floor,Elevation,Area,Seismic fire?,Seismic flooding?,Analysis type,Phase Type,Start,End,Project
+MDP,Motor Driven Pump,3.00E-01,2.50E-01,1.20E+00,7.00E-01,Aux,4,2.00E+00,1.10E+01,"A, B, C",Yes,No,RANDOM, CD      ,0,24,G-PWR
+TDP,Auxilary Feedwater Turbine-Driven Pump,3.50E-01,2.50E-01,7.00E-01,7.00E-01,Aux,3,2.00E+00,1.10E+01,A,Yes,No,RANDOM, CD      ,2,24,G-PWR
+MDP,Auxilary Feedwater Motor-DrivenPump,3.50E-01,2.50E-01,7.00E-01,7.00E-01,Aux,3,2.00E+00,1.10E+01,A,Yes,No,RANDOM, CD      ,4,18,G-PWR

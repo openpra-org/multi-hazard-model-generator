@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 class BaseEvent(ABC):
     def __init__(self, event_description, phase_type, probability_parameters, event_name, project_name, analysis_type,
                  Lambda, tau, prob, mission, UdC, FdT, UdValue, UdValue2, init, PF, Freq, Tau, beta_u, beta_r, a_m, building, floor, elevation, area, count,
-                 seismic_fire,seismic_flooding,peak_ground_accel):
+                 seismic_fire,seismic_flooding,peak_ground_accel,start_time,end_time):
         self.event_description = event_description
         self.phase_type = phase_type
         self.probability_parameters = probability_parameters
@@ -35,6 +35,8 @@ class BaseEvent(ABC):
         self.seismic_flooding = seismic_flooding
         self.peak_ground_accel = peak_ground_accel
         self.count = count
+        self.start_time
+        self.end_time
 
     @abstractmethod
     def create_bed_file(self):
