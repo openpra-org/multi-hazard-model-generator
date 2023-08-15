@@ -35,8 +35,8 @@ class BaseEvent(ABC):
         self.seismic_flooding = seismic_flooding
         self.peak_ground_accel = peak_ground_accel
         self.count = count
-        self.start_time
-        self.end_time
+        self.start_time = start_time
+        self.end_time = end_time
 
     @abstractmethod
     def create_bed_file(self):

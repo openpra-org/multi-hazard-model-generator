@@ -37,7 +37,7 @@ class SeismicEvent(BaseEvent):
         mainshock_params = seismic_event_info.mainshock_params
         num_mainshock_intervals = mainshock_params["num"]
         mainshock_accel = mainshock_params["MS_vector"]
-        print(mainshock_accel)
+        #print(mainshock_accel)
         os.makedirs(output_directory, exist_ok=True)
         file_path = os.path.join(output_directory, "Seismic_events.BEI")
 
@@ -54,9 +54,9 @@ class SeismicEvent(BaseEvent):
 
             if consider_aftershocks == "Yes":
                 if mainshock_params["correlation"] == "No":
-                    self.write_aftershock_basic_events(file, aftershocks_params,self.count)
+                    self.write_aftershock_basic_events(file, aftershocks_params,mainshock_accel,self.count)
                 else:
-                    self.write_aftershock_basic_events(file, aftershocks_params)
+                    self.write_aftershock_basic_events(file, aftershocks_params,mainshock_accel)
 
 
 
@@ -86,21 +86,27 @@ class SeismicEvent(BaseEvent):
     def write_aftershock_basic_events(self, file, aftershocks_params,mainshock_accel,count = 1):
         num_aftershocks = aftershocks_params["num"]
         delta_T=aftershocks_params["dt"]  # aftershock time interval
-
+        aftershock_accel =  aftershocks_params["vector"]
         _, file_extension = os.path.splitext(file.name)
         if file_extension.upper() == ".BEI":
             for mainshock_PGA in mainshock_accel:
 
-                for S in range(self.start_time, self.end_time, delta_T):
+                # Frequency events writing
+                for S in range(int(self.start_time), int(self.end_time), int(delta_T)):
 
-                    number_aftershocks, aftershock_accel = self.mean_aftershocks_number(aftershocks_params, mainshock_PGA,S,S+delta_T)
+                     number_aftershocks, aftershock_accel = self.mean_aftershocks_number(aftershocks_params, mainshock_PGA,S,S+delta_T)
+                     content = ""
 
-                    content = ""
-                    for event_count in range(1, count + 1):
-                        event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
-                        for aftershock_bin in range(1, len(aftershock_accel) + 1):
-                            event_name = f"{self.event_name}-AS-{aftershock_bin}{event_count_str}".upper()
-                            content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{aftershock_accel[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+                     for aftershock_bin in range(1, len(aftershock_accel) + 1):
+                         event_name = f"Freq-AS-{aftershock_bin}".upper()
+                         content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{aftershock_accel[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+
+            content = ""
+            for event_count in range(1, count + 1):
+                event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
+                for aftershock_bin in range(1, len(aftershock_accel) + 1):
+                    event_name = f"{self.event_name}-AS-{aftershock_bin}{event_count_str}".upper()
+                    content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{aftershock_accel[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
 
 
                 file.write(content)
@@ -145,9 +151,9 @@ class SeismicEvent(BaseEvent):
 
             if consider_aftershocks == "Yes":
                 if mainshock_params["correlation"] == "No":
-                    self.write_aftershock_basic_events(file, aftershocks_params, self.count)
+                    self.write_aftershock_basic_events(file, aftershocks_params,mainshock_accel ,self.count)
                 else:
-                    self.write_aftershock_basic_events(file, aftershocks_params)
+                    self.write_aftershock_basic_events(file, aftershocks_params,mainshock_accel)
 
     @staticmethod
     def is_event_duplicated(file_path, event_name): # Checking if an event was duplicated
@@ -172,11 +178,14 @@ class SeismicEvent(BaseEvent):
 
         number_aftershocks = [
             ((10) ** a) * ((mainshock_PGA / aftershock_PGA) ** (alpha * b)) * (1 / (1 - p)) * (
-                        (E + c) ** (1 - p) - (S + c) ** (1 - p))
+                    (E + c) ** (1 - p) - (S + c) ** (1 - p))
             for aftershock_PGA in aftershocks_acceleration_vector
         ]
 
-        return number_aftershocks, np.sqrt(aftershocks_acceleration_vector[:-1] * aftershocks_acceleration_vector[1:])
+        aftershock_acceleration_array = np.array(aftershocks_acceleration_vector)
+        geometric_mean = np.sqrt(aftershock_acceleration_array[:-1] * aftershock_acceleration_array[1:])
+
+        return number_aftershocks, geometric_mean
 
 
 

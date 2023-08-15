@@ -16,7 +16,8 @@
   "Mainshock": {
     "num": 7,
     "MS_vector": [0.17, 0.3, 0.5, 0.8, 1, 1.7, 2],
-    "correlation": "No"
+    "correlation": "No",
+    "damage_accumulation" : "No"
   },
   "Input": {
     "path": "/Users/akram/Development/multi-hazard-pra-model-generator/inputs",
