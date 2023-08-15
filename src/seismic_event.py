@@ -97,9 +97,9 @@ class SeismicEvent(BaseEvent):
                      number_aftershocks, aftershock_accel = self.mean_aftershocks_number(aftershocks_params, mainshock_PGA,S,S+delta_T)
                      content = ""
 
-                     for aftershock_bin in range(1, len(aftershock_accel) + 1):
+                     for freq in number_aftershocks:
                          event_name = f"Freq-AS-{aftershock_bin}".upper()
-                         content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{aftershock_accel[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+                         content += f"{event_name}, V, , ,0,{freq},0, 0, 0,,,,{freq} ,,{self.analysis_type},{self.phase_type}, {self.project_name}\n"
 
             content = ""
             for event_count in range(1, count + 1):
