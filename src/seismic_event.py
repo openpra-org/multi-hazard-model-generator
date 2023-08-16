@@ -15,7 +15,12 @@ class SeismicEvent(BaseEvent):
         self.aftershocks_params = None
         self.mainshock_params = None
         self.frequency_event_processed = False  # Flag to track if frequency event has been processed
-
+        # Initialize the event name dictionary to store categories and their event names
+        self.event_name_categories = {
+            "MS": [],  # Mainshock events
+            "AS": [],  # Aftershock events
+            "AS_FQ": []  # Aftershock frequency events
+        }
     def create_bei_file(self, output_directory, JSON_input):
         self.FdT = "J"
         self.UdT = "S"
@@ -71,7 +76,7 @@ class SeismicEvent(BaseEvent):
                 for mainshock_bin in range(1, num_mainshock_intervals + 1):
                     event_name = f"{self.event_name}-MS-{mainshock_bin}{event_count_str}".upper()
                     content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{mainshock_accel[mainshock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
-
+                    self.collect_event_name("MS", event_name)
             file.write(content)
 
         elif file_extension.upper() == ".BED":
@@ -98,7 +103,7 @@ class SeismicEvent(BaseEvent):
                 for aftershock_bin in range(1, len(geometric_means) + 1):
                     event_name = f"{self.event_name}-AS-{aftershock_bin}{event_count_str}".upper()
                     content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{geometric_means[aftershock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
-
+                    self.collect_event_name("AS", event_name)
 
             file.write(content)
 
@@ -158,10 +163,9 @@ class SeismicEvent(BaseEvent):
         pass
 
     def aftershock_frequency_event_write(self, output_directory, JSON_input):
-
-
         # Write frequency events inside BEI file
-        file_path = os.path.join(output_directory, "seismic_event.BED")  # BED file path
+        file_path_bei = os.path.join(output_directory, "Seismic_events.BEI")
+        file_path_bed = os.path.join(output_directory, "seismic_event.BED")
 
         # Call from_input_file method to get the mainshock and aftershock events parameters
         seismic_event_info = SeismicEvent.from_input_file(JSON_input)
@@ -176,20 +180,22 @@ class SeismicEvent(BaseEvent):
         delta_T = aftershocks_params["dt"]  # aftershock time interval
         aftershock_accel = aftershocks_params["vector"]
 
-        file_path = os.path.join(output_directory, "Seismic_events.BEI")
-        with open(file_path, 'a') as file:  # Use 'a' mode for append
+        with open(file_path_bei, 'a') as file_bei, open(file_path_bed, 'a') as file_bed:
             for mainshock_bin, mainshock_PGA in enumerate(mainshock_accel):
                 # Frequency events writing
                 for S in range(int(self.start_time), int(self.end_time), int(delta_T)):
                     number_aftershocks, aftershock_accel = self.mean_aftershocks_number(aftershocks_params,
                                                                                         mainshock_PGA, S,
                                                                                         S + delta_T)
-                    content = ""
+                    content_bei = ""
+                    content_bed = ""
                     for index, freq in enumerate(number_aftershocks):
                         event_name = f"Freq-MS-{mainshock_bin + 1}-AS-{index + 1}-T-{S + delta_T}".upper()
-                        content += f"{event_name}, V, , ,0,{freq},0, 0, 0,,,,{freq} ,,{self.analysis_type},{self.phase_type}, {self.project_name}\n"
-                    file.write(content)
-
+                        content_bei += f"{event_name}, V, , ,0,{freq},0, 0, 0,,,,{freq} ,,{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+                        content_bed += f"{event_name}, FREQUENCY OF AS BIN {index+1} AT TIME {S+delta_T} AFTER MS BIN {mainshock_bin+1} ,{self.project_name}\n"
+                        self.collect_event_name("AS_FQ", event_name)
+                    file_bei.write(content_bei)
+                    file_bed.write(content_bed)
 
     def mean_aftershocks_number(self,aftershocks_params,mainshock_PGA,S,E):
 
@@ -245,8 +251,22 @@ class SeismicEvent(BaseEvent):
             events.append(event)
         return events
 
+    def collect_event_name(self, category, event_name):
+        """
+        Collect and store event names based on categories.
 
+        Parameters:
+        - category: A string representing the category of the event.
+        - event_name: The name of the event to be stored.
+        """
+        if category in self.event_name_categories:
+            self.event_name_categories[category].append(event_name)
 
+    def get_collected_event_names(self, category):
+        if category in self.event_name_categories:
+            return self.event_name_categories[category]
+        else:
+            return []
 
 
     @classmethod
