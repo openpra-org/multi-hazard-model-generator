@@ -14,6 +14,7 @@ class SeismicEvent(BaseEvent):
                          seismic_fire, seismic_flooding, peak_ground_accel,start_time,end_time)
         self.aftershocks_params = None
         self.mainshock_params = None
+        self.frequency_event_processed = False  # Flag to track if frequency event has been processed
 
     def create_bei_file(self, output_directory, JSON_input):
         self.FdT = "J"
@@ -53,8 +54,13 @@ class SeismicEvent(BaseEvent):
                 self.write_mainshock_basic_events(file, num_mainshock_intervals,mainshock_accel)
 
             if consider_aftershocks == "Yes":
+                if self.frequency_event_processed == False:
+                    self.aftershock_frequency_event(file, aftershocks_params, mainshock_accel)
+                self.frequency_event_processed = True
+
                 if mainshock_params["correlation"] == "No":
                     self.write_aftershock_basic_events(file, aftershocks_params,mainshock_accel,self.count)
+
                 else:
                     self.write_aftershock_basic_events(file, aftershocks_params,mainshock_accel)
 
@@ -89,18 +95,6 @@ class SeismicEvent(BaseEvent):
         aftershock_accel =  aftershocks_params["vector"]
         _, file_extension = os.path.splitext(file.name)
         if file_extension.upper() == ".BEI":
-            for mainshock_PGA in mainshock_accel:
-
-                # Frequency events writing
-                for S in range(int(self.start_time), int(self.end_time), int(delta_T)):
-
-                     number_aftershocks, aftershock_accel = self.mean_aftershocks_number(aftershocks_params, mainshock_PGA,S,S+delta_T)
-                     content = ""
-
-                     for freq in number_aftershocks:
-                         event_name = f"Freq-AS-{aftershock_bin}".upper()
-                         content += f"{event_name}, V, , ,0,{freq},0, 0, 0,,,,{freq} ,,{self.analysis_type},{self.phase_type}, {self.project_name}\n"
-
             content = ""
             for event_count in range(1, count + 1):
                 event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
@@ -167,6 +161,28 @@ class SeismicEvent(BaseEvent):
         pass
 
 
+    def aftershock_frequency_event(self, file, aftershocks_params, mainshock_accel):
+
+        num_aftershocks = aftershocks_params["num"]
+        delta_T = aftershocks_params["dt"]  # aftershock time interval
+        aftershock_accel = aftershocks_params["vector"]
+        _, file_extension = os.path.splitext(file.name)
+        if file_extension.upper() == ".BEI":
+            for mainshock_PGA in mainshock_accel:
+
+                # Frequency events writing
+                for S in range(int(self.start_time), int(self.end_time), int(delta_T)):
+
+                    number_aftershocks, aftershock_accel = self.mean_aftershocks_number(aftershocks_params,
+                                                                                        mainshock_PGA, S, S + delta_T)
+                    content = ""
+
+                    for index, freq in enumerate(number_aftershocks):
+                        event_name = f"Freq-AS-{index + 1}-T-{S + delta_T}".upper()
+                        content += f"{event_name}, V, , ,0,{freq},0, 0, 0,,,,{freq} ,,{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+                    file.write(content)
+
+
     def mean_aftershocks_number(self,aftershocks_params,mainshock_PGA,S,E):
 
         a = aftershocks_params["AF_arrival_params"]["a"]  # Read 'a' from aftershock_params
@@ -185,7 +201,7 @@ class SeismicEvent(BaseEvent):
         aftershock_acceleration_array = np.array(aftershocks_acceleration_vector)
         geometric_mean = np.sqrt(aftershock_acceleration_array[:-1] * aftershock_acceleration_array[1:])
 
-        return number_aftershocks, geometric_mean
+        return number_aftershocks[:-1], geometric_mean
 
 
 
