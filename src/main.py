@@ -19,7 +19,7 @@ seismic_event_info = SeismicEvent.from_input_file(json_file_path)
 events=SeismicEvent.from_csv(os.path.join(current_dir, "..", "inputs"),seismic_event_info.input_params["name"])
 
 for event in events:
+    event.create_bei_file(output_dir, json_file_path)
+    event.create_bed_file(output_dir,json_file_path)
 
-    for event in events:
-        event.create_bei_file(output_dir, json_file_path)
-        event.create_bed_file(output_dir,json_file_path)
+event.aftershock_frequency_event_write(output_dir,json_file_path)
