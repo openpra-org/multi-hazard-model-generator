@@ -26,6 +26,5 @@ for event in events:
 event.aftershock_frequency_event_write(output_dir,json_file_path)
 
 
-# Get and print collected event names for the "MS" category
-ms_event_names = event.get_collected_event_names("AS_FQ")
-print("Mainshock Event Names:", ms_event_names)
+ms_event_names = SeismicEvent.get_events_by_category("MS")
+as_event_names = SeismicEvent.get_events_by_category("AS_FQ")

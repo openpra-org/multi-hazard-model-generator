@@ -2,6 +2,7 @@ from imports import *
 from base_event import BaseEvent
 
 class SeismicEvent(BaseEvent):
+    event_name_categories = {}  # Define the class-level attribute
     def __init__(self, event_description="", phase_type="", probability_parameters=None,
                  event_name="", project_name="", analysis_type="", Lambda=0, tau=0, prob=0,
                  mission=0, UdC="", FdT=0, UdValue=0, UdValue2=0, init=0, PF=0, Freq=0, Tau = 0,
@@ -15,12 +16,7 @@ class SeismicEvent(BaseEvent):
         self.aftershocks_params = None
         self.mainshock_params = None
         self.frequency_event_processed = False  # Flag to track if frequency event has been processed
-        # Initialize the event name dictionary to store categories and their event names
-        self.event_name_categories = {
-            "MS": [],  # Mainshock events
-            "AS": [],  # Aftershock events
-            "AS_FQ": []  # Aftershock frequency events
-        }
+
     def create_bei_file(self, output_directory, JSON_input):
         self.FdT = "J"
         self.UdT = "S"
@@ -251,22 +247,16 @@ class SeismicEvent(BaseEvent):
             events.append(event)
         return events
 
-    def collect_event_name(self, category, event_name):
-        """
-        Collect and store event names based on categories.
+    @classmethod
+    def collect_event_name(cls, category, event_name):
+        if category not in cls.event_name_categories:
+            cls.event_name_categories[category] = []
+        cls.event_name_categories[category].append(event_name)
 
-        Parameters:
-        - category: A string representing the category of the event.
-        - event_name: The name of the event to be stored.
-        """
-        if category in self.event_name_categories:
-            self.event_name_categories[category].append(event_name)
-
-    def get_collected_event_names(self, category):
-        if category in self.event_name_categories:
-            return self.event_name_categories[category]
-        else:
-            return []
+    @classmethod
+    def get_events_by_category(cls, category):
+        events_of_category = cls.event_name_categories.get(category, [])
+        return events_of_category
 
 
     @classmethod
