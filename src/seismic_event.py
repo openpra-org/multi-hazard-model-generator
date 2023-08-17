@@ -155,8 +155,42 @@ class SeismicEvent(BaseEvent):
                     return True
         return False
 
-    def create_bec_file(self, output_directory):
-        pass
+    def create_bec_file(self, output_directory, JSON_input):
+
+        # Retrieve event names for each category
+        as_event_names = SeismicEvent.get_events_by_category("AS")
+        as_fq_event_names = SeismicEvent.get_events_by_category("AS_FQ")
+
+        file_path = os.path.join(output_directory, "seismic_event.BEC")  # BED file path
+
+        bec_event_names = []
+
+        if not os.path.exists(file_path):
+            with open(file_path, 'w') as file:
+                file.write(f"{self.project_name}=\n* Name  , tTypeName, COM, DLL Name, Proc Name, ModelType, PhaseType, Project \n * consts, params, ...\n * ^EOS\n")
+
+        for as_event in as_event_names:
+            # Extract the number after "AS-" from the event name
+            as_number = as_event.split("-")[2]  # Extracts the number after "AS-"
+            print(as_number)
+            # Find matching events in as_fq_event_names
+            matching_fq_events = [fq_event for fq_event in as_fq_event_names if f"-AS-{as_number}-" in fq_event]
+
+            # Combine and create BEC event names
+            for fq_event in matching_fq_events:
+                combined_name = f"{as_event}-{fq_event.split('-')[3]}-CE"
+                bec_event_names.append(combined_name)
+
+        # Print the combined BEC event names
+        for bec_event in bec_event_names:
+            print(bec_event)
+
+
+
+
+
+
+
 
     def aftershock_frequency_event_write(self, output_directory, JSON_input):
         # Write frequency events inside BEI file
@@ -174,22 +208,26 @@ class SeismicEvent(BaseEvent):
         mainshock_accel = mainshock_params["MS_vector"]
         num_aftershocks = aftershocks_params["num"]
         delta_T = aftershocks_params["dt"]  # aftershock time interval
+        mission = aftershocks_params["mission"]  # aftershock time interval
         aftershock_accel = aftershocks_params["vector"]
 
         with open(file_path_bei, 'a') as file_bei, open(file_path_bed, 'a') as file_bed:
             for mainshock_bin, mainshock_PGA in enumerate(mainshock_accel):
                 # Frequency events writing
-                for S in range(int(self.start_time), int(self.end_time), int(delta_T)):
+
+
+                for S in range(0+delta_T, int(mission)+delta_T, int(delta_T)):
                     number_aftershocks, aftershock_accel = self.mean_aftershocks_number(aftershocks_params,
                                                                                         mainshock_PGA, S,
                                                                                         S + delta_T)
                     content_bei = ""
                     content_bed = ""
                     for index, freq in enumerate(number_aftershocks):
-                        event_name = f"Freq-MS-{mainshock_bin + 1}-AS-{index + 1}-T-{S + delta_T}".upper()
+                        event_name = f"Freq-MS-{mainshock_bin + 1}-AS-{index + 1}-T-{S}".upper()
                         content_bei += f"{event_name}, V, , ,0,{freq},0, 0, 0,,,,{freq} ,,{self.analysis_type},{self.phase_type}, {self.project_name}\n"
-                        content_bed += f"{event_name}, FREQUENCY OF AS BIN {index+1} AT TIME {S+delta_T} AFTER MS BIN {mainshock_bin+1} ,{self.project_name}\n"
+                        content_bed += f"{event_name}, FREQUENCY OF AS BIN {index+1} AT TIME {S} AFTER MS BIN {mainshock_bin+1} ,{self.project_name}\n"
                         self.collect_event_name("AS_FQ", event_name)
+
                     file_bei.write(content_bei)
                     file_bed.write(content_bed)
 

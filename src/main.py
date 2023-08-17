@@ -24,7 +24,12 @@ for event in events:
     event.create_bed_file(output_dir,json_file_path)
 
 event.aftershock_frequency_event_write(output_dir,json_file_path)
+event.create_bec_file(output_dir, json_file_path)
 
 
 ms_event_names = SeismicEvent.get_events_by_category("MS")
-as_event_names = SeismicEvent.get_events_by_category("AS_FQ")
+as_event_names = SeismicEvent.get_events_by_category("AS")
+as_fq_event_names = SeismicEvent.get_events_by_category("AS_FQ")
+
+print(as_fq_event_names)
+print(as_event_names)
