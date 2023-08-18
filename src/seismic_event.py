@@ -183,14 +183,40 @@ class SeismicEvent(BaseEvent):
             for fq_event in matching_fq_events:
                 combined_name = f"{as_event}-{fq_event.split('-')[1]}-{fq_event.split('-')[2]}-{fq_event.split('-')[5]}-{fq_event.split('-')[6]}-CE"
                 combined_name = re.sub(r'[^a-zA-Z0-9-]', '', combined_name)
+
                 bec_event_names.append(combined_name)
                 self.collect_event_name("CE", combined_name)
                 content += f"{combined_name},            0,COM,PLUGUTIL, MULT ,{self.analysis_type},{self.phase_type}, {self.project_name}\n"
                 content += f"{as_event}, {fq_event}\n"
                 content+= "^EOS\n"
-        # Now that the loop has finished, open the file again and write the content
+        # Open the file again and write the content
         with open(file_path, 'a') as file:
             file.write(content)
+
+
+
+    def create_bec_file1(self, output_directory, JSON_input):
+
+
+
+        file_path = os.path.join(output_directory, "seismic_event.BEC")  # BED file path
+
+
+
+        if not os.path.exists(file_path):
+            with open(file_path, 'w') as file:
+                file.write(
+                    f"{self.project_name}=\n* Name  , tTypeName, COM, DLL Name, Proc Name, ModelType, PhaseType, Project \n * consts, params, ...\n * ^EOS\n")
+
+        content = ""
+
+
+
+
+
+        with open(file_path, 'a') as file:
+            file.write(content)
+
 
     def aftershock_frequency_event_write(self, output_directory, JSON_input):
         # Write frequency events inside BEI file
