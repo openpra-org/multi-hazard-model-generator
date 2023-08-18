@@ -167,30 +167,30 @@ class SeismicEvent(BaseEvent):
 
         if not os.path.exists(file_path):
             with open(file_path, 'w') as file:
-                file.write(f"{self.project_name}=\n* Name  , tTypeName, COM, DLL Name, Proc Name, ModelType, PhaseType, Project \n * consts, params, ...\n * ^EOS\n")
+                file.write(
+                    f"{self.project_name}=\n* Name  , tTypeName, COM, DLL Name, Proc Name, ModelType, PhaseType, Project \n * consts, params, ...\n * ^EOS\n")
+
+        content = ""
 
         for as_event in as_event_names:
             # Extract the number after "AS-" from the event name
-            as_number = as_event.split("-")[2]  # Extracts the number after "AS-"
-            print(as_number)
+            as_number = int(as_event.split("-")[2])  # Extracts the number after "AS-"
+
             # Find matching events in as_fq_event_names
             matching_fq_events = [fq_event for fq_event in as_fq_event_names if f"-AS-{as_number}-" in fq_event]
 
             # Combine and create BEC event names
             for fq_event in matching_fq_events:
-                combined_name = f"{as_event}-{fq_event.split('-')[3]}-CE"
+                combined_name = f"{as_event}-{fq_event.split('-')[1]}-{fq_event.split('-')[2]}-{fq_event.split('-')[5]}-{fq_event.split('-')[6]}-CE"
+                combined_name = re.sub(r'[^a-zA-Z0-9-]', '', combined_name)
                 bec_event_names.append(combined_name)
-
-        # Print the combined BEC event names
-        for bec_event in bec_event_names:
-            print(bec_event)
-
-
-
-
-
-
-
+                self.collect_event_name("CE", combined_name)
+                content += f"{combined_name},            0,COM,PLUGUTIL, MULT ,{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+                content += f"{as_event}, {fq_event}\n"
+                content+= "^EOS\n"
+        # Now that the loop has finished, open the file again and write the content
+        with open(file_path, 'a') as file:
+            file.write(content)
 
     def aftershock_frequency_event_write(self, output_directory, JSON_input):
         # Write frequency events inside BEI file

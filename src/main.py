@@ -31,5 +31,3 @@ ms_event_names = SeismicEvent.get_events_by_category("MS")
 as_event_names = SeismicEvent.get_events_by_category("AS")
 as_fq_event_names = SeismicEvent.get_events_by_category("AS_FQ")
 
-print(as_fq_event_names)
-print(as_event_names)
