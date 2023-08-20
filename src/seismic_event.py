@@ -1,5 +1,6 @@
 from imports import *
 from base_event import BaseEvent
+from collections import Counter
 
 class SeismicEvent(BaseEvent):
     event_name_categories = {}  # Define the class-level attribute
@@ -39,7 +40,6 @@ class SeismicEvent(BaseEvent):
         mainshock_params = seismic_event_info.mainshock_params
         num_mainshock_intervals = mainshock_params["num"]
         mainshock_accel = mainshock_params["MS_vector"]
-        #print(mainshock_accel)
         os.makedirs(output_directory, exist_ok=True)
         file_path = os.path.join(output_directory, "Seismic_events.BEI")
 
@@ -175,10 +175,8 @@ class SeismicEvent(BaseEvent):
         for as_event in as_event_names:
             # Extract the number after "AS-" from the event name
             as_number = int(as_event.split("-")[2])  # Extracts the number after "AS-"
-
             # Find matching events in as_fq_event_names
             matching_fq_events = [fq_event for fq_event in as_fq_event_names if f"-AS-{as_number}-" in fq_event]
-
             # Combine and create BEC event names
             for fq_event in matching_fq_events:
                 combined_name = f"{as_event}-{fq_event.split('-')[1]}-{fq_event.split('-')[2]}-{fq_event.split('-')[5]}-{fq_event.split('-')[6]}-CE"
@@ -194,28 +192,6 @@ class SeismicEvent(BaseEvent):
             file.write(content)
 
 
-
-    def create_bec_file1(self, output_directory, JSON_input):
-
-
-
-        file_path = os.path.join(output_directory, "seismic_event.BEC")  # BED file path
-
-
-
-        if not os.path.exists(file_path):
-            with open(file_path, 'w') as file:
-                file.write(
-                    f"{self.project_name}=\n* Name  , tTypeName, COM, DLL Name, Proc Name, ModelType, PhaseType, Project \n * consts, params, ...\n * ^EOS\n")
-
-        content = ""
-
-
-
-
-
-        with open(file_path, 'a') as file:
-            file.write(content)
 
 
     def aftershock_frequency_event_write(self, output_directory, JSON_input):
@@ -279,7 +255,49 @@ class SeismicEvent(BaseEvent):
 
 
 
+    def write_house_event(self,output_directory,JSON_input):
 
+        file_path_bei = os.path.join(output_directory, "Seismic_events.BEI")
+        file_path_bed = os.path.join(output_directory, "seismic_event.BED")
+
+        # Call from_input_file method to get the mainshock and aftershock events parameters
+        seismic_event_info = SeismicEvent.from_input_file(JSON_input)
+
+        # Access the parameters from the seismic_event object
+        aftershocks_params = seismic_event_info.aftershocks_params
+        consider_aftershocks = aftershocks_params["consider_aftershocks"]
+
+        mainshock_params = seismic_event_info.mainshock_params
+        num_mainshock_intervals = mainshock_params["num"]
+
+        num_aftershocks = aftershocks_params["num"]
+        delta_T = aftershocks_params["dt"]  # aftershock time interval
+        mission = aftershocks_params["mission"]  # aftershock time interval
+        aftershock_accel = aftershocks_params["vector"]
+
+        content_bei = ""
+        content_bed = ""
+        # Mainshock hoyse event writing
+        with open(file_path_bei, 'a') as file_bei, open(file_path_bed, 'a') as file_bed:
+            for mainshock_bin_num in range(num_mainshock_intervals):
+                event_name = f"HE-MS-{mainshock_bin_num + 1}".upper()
+                content_bei += f"{event_name}, F, 0.000E+000 ,  , 0.000E+000, 0.000E+000, 0.000E+000, 0.000E+000, 0.000E+000,  ,  , 0.000E+000, 0.000E+000,Y,{self.analysis_type}\n"
+                content_bed += f"{event_name}, MAINSHOCK BIN  {mainshock_bin_num + 1} OCCURS ,{self.project_name}\n"
+                self.collect_event_name("HE_MS",event_name)
+            file_bed.write(content_bed)
+            file_bei.write(content_bei)
+
+        # Aftershock arrival house event  writing
+        content_bei = ""
+        content_bed = ""
+        with open(file_path_bei, 'a') as file_bei, open(file_path_bed, 'a') as file_bed:
+            for S in range(0+delta_T, int(mission)+delta_T, int(delta_T)):
+                event_name = f"HE-T-{S}".upper()
+                content_bei += f"{event_name}, F, 0.000E+000 ,  , 0.000E+000, 0.000E+000, 0.000E+000, 0.000E+000, 0.000E+000,  ,  , 0.000E+000, 0.000E+000,Y,{self.analysis_type}\n"
+                content_bed += f"{event_name}, AFTERSHOCKS OCCUR BETWEEN TIME {S-   delta_T} AND {S} HR,{self.project_name}\n"
+                self.collect_event_name("HE_T",event_name)
+            file_bed.write(content_bed)
+            file_bei.write(content_bei)
 
 
     @classmethod

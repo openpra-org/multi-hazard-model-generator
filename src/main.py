@@ -25,7 +25,7 @@ for event in events:
 
 event.aftershock_frequency_event_write(output_dir,json_file_path)
 event.create_bec_file(output_dir, json_file_path)
-
+event.write_house_event(output_dir,json_file_path)
 
 ms_event_names = SeismicEvent.get_events_by_category("MS")
 as_event_names = SeismicEvent.get_events_by_category("AS")
