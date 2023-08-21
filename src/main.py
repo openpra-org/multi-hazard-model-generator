@@ -1,6 +1,6 @@
 from imports import *
 from  seismic_event import  SeismicEvent
-
+from fault_tree import FaultTree
 
 
 # Get the directory path of the current script (main.py)
@@ -31,6 +31,8 @@ ms_event_names = SeismicEvent.get_events_by_category("MS")
 as_event_names = SeismicEvent.get_events_by_category("AS")
 as_fq_event_names = SeismicEvent.get_events_by_category("AS_FQ")
 ce_event_names = SeismicEvent.get_events_by_category("CE")
-he_event_names = SeismicEvent.get_events_by_category("HE_T")
+he_event_names = SeismicEvent.get_events_by_category("HE_MS")
 
-print(he_event_names)
+
+fault_tree_instance = FaultTree()
+fault_tree_instance.write_mainshock_fault_tree(output_dir,json_file_path,ms_event_names,he_event_names)

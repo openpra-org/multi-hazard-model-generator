@@ -3,12 +3,76 @@ from base_fault import BaseFaultTree
 from seismic_event import SeismicEvent
 
 class FaultTree(BaseFaultTree):
-    def write_mainshock_fault_tree(self, output_directory, event_names,Json_input):
+    gate_name_categories = {}  # Define the class-level attribute
+    fault_name_categories = {}
+    def write_mainshock_fault_tree(self, output_directory,Json_input,ms_event_names,he_ms_names):
 
+        # Extracting information from JSON file
+        seismic_event_info = self.from_input_file(Json_input)
+        mainshock_params = seismic_event_info.mainshock_params
+        num_mainshock_intervals = mainshock_params["num"]
+        project_name = seismic_event_info.analysis_params["project"]
+
+        # Fault Tree logic file (FTL)
         file_path = os.path.join(output_directory, "fault_tree.ftl")  # FTL file path
 
-        ms_event_names = SeismicEvent.get_events_by_category("MS")
-        ms_he_names  = SeismicEvent.get_events_by_category("HE_MS")
+
+
+
+
+        reshaped_event_names = np.reshape(ms_event_names, (-1, num_mainshock_intervals))
+
+        with open(file_path, 'w') as file:
+            for row in reshaped_event_names:
+
+                name_split = row[0].split("-")[:-1]
+                # Modify each element in name_split using a list comprehension
+                modified_name_split = [re.sub(r'[^a-zA-Z0-9-]', '', part) for part in name_split]
+
+                # Join the modified elements back together with "-"
+                combined_name = "-".join(modified_name_split)
+
+                ms_ft_name = f"{project_name} ,   {combined_name}-FT = "
+                file.write(ms_ft_name + '\n')
+
+
+                ms_ft_name = f"{combined_name}-FT              OR "
+                file.write(ms_ft_name)
+                for event_name in row:
+                    # Add "GT" prefix to the event name and write it to the file
+                    gt_name = f"{event_name}-GT  "
+                    self.collect_gate_name("MS",gt_name)
+                    file.write(gt_name)
+                file.write('\n')
+
+                for index ,event_name in enumerate(row):
+                    gt_comp = f"{event_name}-GT                  AND  "
+                    file.write(gt_comp)
+                    file.write(f"{he_ms_names[index]} {event_name}\n")
+                file.write("^EOS\n")
+
+
+
+        # Write fault tree description file
+
+
+    @classmethod
+    def collect_gate_name(cls, category, gate_name):
+        if category not in cls.gate_name_categories:
+            cls.gate_name_categories[category] = []
+        cls.gate_name_categories[category].append(gate_name)
+
+    @classmethod
+    def collect_fault_tree_name(cls, category, fault_tree_name):
+        if category not in cls.fault_name_categories:
+            cls.fault_name_categories[category] = []
+        cls.fault_name_categories[category].append(fault_tree_name)
+
+
+
+
+
+
 
 
 
@@ -28,22 +92,14 @@ class FaultTree(BaseFaultTree):
         mainshock_params = data["Mainshock"]
         input_params = data["Input"]
         output_params = data["Output"]
-        # # Access individual parameter values for aftershocks
-        # consider_aftershocks = aftershocks_params["consider_aftershocks"]
-        # num_aftershock_intervals = aftershocks_params["num"]
-        # mission_time = aftershocks_params["mission"]
-        # n_dt = aftershocks_params["n_dt"]
-        # af_vector = aftershocks_params["vector"]
-        #
-        # # Access individual parameter values for mainshock
-        # num_mainshock_intervals = mainshock_params["num"]
-        # ms_vector = mainshock_params["MS_vector"]
-        # correlation = mainshock_params["correlation"]
+        analysis = data["Analysis"]
+
         seismic_event_info = cls()
         seismic_event_info.aftershocks_params = aftershocks_params
         seismic_event_info.mainshock_params = mainshock_params
         seismic_event_info.input_params = input_params
         seismic_event_info.output_params = output_params
+        seismic_event_info.analysis_params = analysis
         return seismic_event_info
 
 

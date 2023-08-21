@@ -3,10 +3,6 @@ from abc import ABC, abstractmethod
 
 
 class BaseFaultTree:
-    def __init__(self, project_name, analysis_type, phase_type):
-        self.project_name = project_name
-        self.analysis_type = analysis_type
-        self.phase_type = phase_type
 
     def write_file(self, file_path, content):
         if not os.path.exists(file_path):
