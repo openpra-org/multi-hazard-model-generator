@@ -70,7 +70,7 @@ class SeismicEvent(BaseEvent):
             for event_count in range(1, count + 1):
                 event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
                 for mainshock_bin in range(1, num_mainshock_intervals + 1):
-                    event_name = f"{self.event_name}-MS-{mainshock_bin}{event_count_str}".upper()
+                    event_name = f"{self.event_name}{event_count_str}-MS-{mainshock_bin}".upper()
                     content += f"{event_name}, {self.FdT},{self.UdC} , {self.UdT},{self.UdValue},{self.prob},{mainshock_accel[mainshock_bin - 1]}, {self.Tau}, {self.mission},{self.init},{self.PF},{self.UdValue2}, ,{self.Freq},{self.analysis_type},{self.phase_type}, {self.project_name}\n"
                     self.collect_event_name("MS", event_name)
             file.write(content)
@@ -82,7 +82,7 @@ class SeismicEvent(BaseEvent):
                 event_count_str = "" if count == 1 else f"-{chr(64 + event_count)}"
 
                 for mainshock_bin in range(1, num_mainshock_intervals + 1):
-                    event_name = f"{self.event_name}-MS-{mainshock_bin}{event_count_str}".upper()
+                    event_name = f"{self.event_name}{event_count_str}-MS-{mainshock_bin}".upper()
                     event_description_with_bin = f"{self.event_description} Mainshock Bin-{mainshock_bin}{event_count_str}"
                     content += f"{event_name},{event_description_with_bin}, {self.project_name}\n"
             file.write(content)

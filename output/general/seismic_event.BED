@@ -1,35 +1,105 @@
 G-PWR=
 *Name         , Descriptions, Project
-MDP-MS-1,Motor Driven Pump Mainshock Bin-1, G-PWR
-MDP-MS-2,Motor Driven Pump Mainshock Bin-2, G-PWR
-MDP-MS-3,Motor Driven Pump Mainshock Bin-3, G-PWR
-MDP-MS-4,Motor Driven Pump Mainshock Bin-4, G-PWR
-MDP-MS-5,Motor Driven Pump Mainshock Bin-5, G-PWR
-MDP-MS-6,Motor Driven Pump Mainshock Bin-6, G-PWR
-MDP-MS-7,Motor Driven Pump Mainshock Bin-7, G-PWR
-MDP-AS-1,Motor Driven Pump Aftershock Bin-1, G-PWR
-MDP-AS-2,Motor Driven Pump Aftershock Bin-2, G-PWR
-MDP-AS-3,Motor Driven Pump Aftershock Bin-3, G-PWR
-TDP-MS-1,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-1, G-PWR
-TDP-MS-2,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-2, G-PWR
-TDP-MS-3,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-3, G-PWR
-TDP-MS-4,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-4, G-PWR
-TDP-MS-5,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-5, G-PWR
-TDP-MS-6,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-6, G-PWR
-TDP-MS-7,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-7, G-PWR
-TDP-AS-1,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-1, G-PWR
-TDP-AS-2,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-2, G-PWR
-TDP-AS-3,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-3, G-PWR
-CDP-MS-1,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-1, G-PWR
-CDP-MS-2,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-2, G-PWR
-CDP-MS-3,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-3, G-PWR
-CDP-MS-4,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-4, G-PWR
-CDP-MS-5,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-5, G-PWR
-CDP-MS-6,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-6, G-PWR
-CDP-MS-7,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-7, G-PWR
-CDP-AS-1,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-1, G-PWR
-CDP-AS-2,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-2, G-PWR
-CDP-AS-3,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-3, G-PWR
+MDP-A-MS-1,Motor Driven Pump Mainshock Bin-1-A, G-PWR
+MDP-A-MS-2,Motor Driven Pump Mainshock Bin-2-A, G-PWR
+MDP-A-MS-3,Motor Driven Pump Mainshock Bin-3-A, G-PWR
+MDP-A-MS-4,Motor Driven Pump Mainshock Bin-4-A, G-PWR
+MDP-A-MS-5,Motor Driven Pump Mainshock Bin-5-A, G-PWR
+MDP-A-MS-6,Motor Driven Pump Mainshock Bin-6-A, G-PWR
+MDP-A-MS-7,Motor Driven Pump Mainshock Bin-7-A, G-PWR
+MDP-B-MS-1,Motor Driven Pump Mainshock Bin-1-B, G-PWR
+MDP-B-MS-2,Motor Driven Pump Mainshock Bin-2-B, G-PWR
+MDP-B-MS-3,Motor Driven Pump Mainshock Bin-3-B, G-PWR
+MDP-B-MS-4,Motor Driven Pump Mainshock Bin-4-B, G-PWR
+MDP-B-MS-5,Motor Driven Pump Mainshock Bin-5-B, G-PWR
+MDP-B-MS-6,Motor Driven Pump Mainshock Bin-6-B, G-PWR
+MDP-B-MS-7,Motor Driven Pump Mainshock Bin-7-B, G-PWR
+MDP-C-MS-1,Motor Driven Pump Mainshock Bin-1-C, G-PWR
+MDP-C-MS-2,Motor Driven Pump Mainshock Bin-2-C, G-PWR
+MDP-C-MS-3,Motor Driven Pump Mainshock Bin-3-C, G-PWR
+MDP-C-MS-4,Motor Driven Pump Mainshock Bin-4-C, G-PWR
+MDP-C-MS-5,Motor Driven Pump Mainshock Bin-5-C, G-PWR
+MDP-C-MS-6,Motor Driven Pump Mainshock Bin-6-C, G-PWR
+MDP-C-MS-7,Motor Driven Pump Mainshock Bin-7-C, G-PWR
+MDP-D-MS-1,Motor Driven Pump Mainshock Bin-1-D, G-PWR
+MDP-D-MS-2,Motor Driven Pump Mainshock Bin-2-D, G-PWR
+MDP-D-MS-3,Motor Driven Pump Mainshock Bin-3-D, G-PWR
+MDP-D-MS-4,Motor Driven Pump Mainshock Bin-4-D, G-PWR
+MDP-D-MS-5,Motor Driven Pump Mainshock Bin-5-D, G-PWR
+MDP-D-MS-6,Motor Driven Pump Mainshock Bin-6-D, G-PWR
+MDP-D-MS-7,Motor Driven Pump Mainshock Bin-7-D, G-PWR
+MDP-AS-1-A,Motor Driven Pump Aftershock Bin-1-A, G-PWR
+MDP-AS-2-A,Motor Driven Pump Aftershock Bin-2-A, G-PWR
+MDP-AS-3-A,Motor Driven Pump Aftershock Bin-3-A, G-PWR
+MDP-AS-1-B,Motor Driven Pump Aftershock Bin-1-B, G-PWR
+MDP-AS-2-B,Motor Driven Pump Aftershock Bin-2-B, G-PWR
+MDP-AS-3-B,Motor Driven Pump Aftershock Bin-3-B, G-PWR
+MDP-AS-1-C,Motor Driven Pump Aftershock Bin-1-C, G-PWR
+MDP-AS-2-C,Motor Driven Pump Aftershock Bin-2-C, G-PWR
+MDP-AS-3-C,Motor Driven Pump Aftershock Bin-3-C, G-PWR
+MDP-AS-1-D,Motor Driven Pump Aftershock Bin-1-D, G-PWR
+MDP-AS-2-D,Motor Driven Pump Aftershock Bin-2-D, G-PWR
+MDP-AS-3-D,Motor Driven Pump Aftershock Bin-3-D, G-PWR
+TDP-A-MS-1,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-1-A, G-PWR
+TDP-A-MS-2,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-2-A, G-PWR
+TDP-A-MS-3,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-3-A, G-PWR
+TDP-A-MS-4,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-4-A, G-PWR
+TDP-A-MS-5,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-5-A, G-PWR
+TDP-A-MS-6,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-6-A, G-PWR
+TDP-A-MS-7,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-7-A, G-PWR
+TDP-B-MS-1,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-1-B, G-PWR
+TDP-B-MS-2,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-2-B, G-PWR
+TDP-B-MS-3,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-3-B, G-PWR
+TDP-B-MS-4,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-4-B, G-PWR
+TDP-B-MS-5,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-5-B, G-PWR
+TDP-B-MS-6,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-6-B, G-PWR
+TDP-B-MS-7,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-7-B, G-PWR
+TDP-C-MS-1,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-1-C, G-PWR
+TDP-C-MS-2,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-2-C, G-PWR
+TDP-C-MS-3,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-3-C, G-PWR
+TDP-C-MS-4,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-4-C, G-PWR
+TDP-C-MS-5,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-5-C, G-PWR
+TDP-C-MS-6,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-6-C, G-PWR
+TDP-C-MS-7,Auxilary Feedwater Turbine-Driven Pump Mainshock Bin-7-C, G-PWR
+TDP-AS-1-A,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-1-A, G-PWR
+TDP-AS-2-A,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-2-A, G-PWR
+TDP-AS-3-A,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-3-A, G-PWR
+TDP-AS-1-B,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-1-B, G-PWR
+TDP-AS-2-B,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-2-B, G-PWR
+TDP-AS-3-B,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-3-B, G-PWR
+TDP-AS-1-C,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-1-C, G-PWR
+TDP-AS-2-C,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-2-C, G-PWR
+TDP-AS-3-C,Auxilary Feedwater Turbine-Driven Pump Aftershock Bin-3-C, G-PWR
+CDP-A-MS-1,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-1-A, G-PWR
+CDP-A-MS-2,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-2-A, G-PWR
+CDP-A-MS-3,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-3-A, G-PWR
+CDP-A-MS-4,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-4-A, G-PWR
+CDP-A-MS-5,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-5-A, G-PWR
+CDP-A-MS-6,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-6-A, G-PWR
+CDP-A-MS-7,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-7-A, G-PWR
+CDP-B-MS-1,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-1-B, G-PWR
+CDP-B-MS-2,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-2-B, G-PWR
+CDP-B-MS-3,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-3-B, G-PWR
+CDP-B-MS-4,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-4-B, G-PWR
+CDP-B-MS-5,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-5-B, G-PWR
+CDP-B-MS-6,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-6-B, G-PWR
+CDP-B-MS-7,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-7-B, G-PWR
+CDP-C-MS-1,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-1-C, G-PWR
+CDP-C-MS-2,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-2-C, G-PWR
+CDP-C-MS-3,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-3-C, G-PWR
+CDP-C-MS-4,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-4-C, G-PWR
+CDP-C-MS-5,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-5-C, G-PWR
+CDP-C-MS-6,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-6-C, G-PWR
+CDP-C-MS-7,Auxilary Feedwater Motor-DrivenPump Mainshock Bin-7-C, G-PWR
+CDP-AS-1-A,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-1-A, G-PWR
+CDP-AS-2-A,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-2-A, G-PWR
+CDP-AS-3-A,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-3-A, G-PWR
+CDP-AS-1-B,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-1-B, G-PWR
+CDP-AS-2-B,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-2-B, G-PWR
+CDP-AS-3-B,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-3-B, G-PWR
+CDP-AS-1-C,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-1-C, G-PWR
+CDP-AS-2-C,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-2-C, G-PWR
+CDP-AS-3-C,Auxilary Feedwater Motor-DrivenPump Aftershock Bin-3-C, G-PWR
 FREQ-MS-1-AS-1-T-4, FREQUENCY OF AS BIN 1 AT TIME 4 AFTER MS BIN 1 ,G-PWR
 FREQ-MS-1-AS-2-T-4, FREQUENCY OF AS BIN 2 AT TIME 4 AFTER MS BIN 1 ,G-PWR
 FREQ-MS-1-AS-3-T-4, FREQUENCY OF AS BIN 3 AT TIME 4 AFTER MS BIN 1 ,G-PWR
@@ -163,9 +233,9 @@ HE-MS-4, MAINSHOCK BIN  4 OCCURS ,G-PWR
 HE-MS-5, MAINSHOCK BIN  5 OCCURS ,G-PWR
 HE-MS-6, MAINSHOCK BIN  6 OCCURS ,G-PWR
 HE-MS-7, MAINSHOCK BIN  7 OCCURS ,G-PWR
-HE-T-4, AFTERSHOCKS OCCUR BETWEEN TIME 0 AND 4 ,G-PWR
-HE-T-8, AFTERSHOCKS OCCUR BETWEEN TIME 4 AND 8 ,G-PWR
-HE-T-12, AFTERSHOCKS OCCUR BETWEEN TIME 8 AND 12 ,G-PWR
-HE-T-16, AFTERSHOCKS OCCUR BETWEEN TIME 12 AND 16 ,G-PWR
-HE-T-20, AFTERSHOCKS OCCUR BETWEEN TIME 16 AND 20 ,G-PWR
-HE-T-24, AFTERSHOCKS OCCUR BETWEEN TIME 20 AND 24 ,G-PWR
+HE-T-4, AFTERSHOCKS OCCUR BETWEEN TIME 0 AND 4 HR,G-PWR
+HE-T-8, AFTERSHOCKS OCCUR BETWEEN TIME 4 AND 8 HR,G-PWR
+HE-T-12, AFTERSHOCKS OCCUR BETWEEN TIME 8 AND 12 HR,G-PWR
+HE-T-16, AFTERSHOCKS OCCUR BETWEEN TIME 12 AND 16 HR,G-PWR
+HE-T-20, AFTERSHOCKS OCCUR BETWEEN TIME 16 AND 20 HR,G-PWR
+HE-T-24, AFTERSHOCKS OCCUR BETWEEN TIME 20 AND 24 HR,G-PWR

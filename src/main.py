@@ -31,3 +31,6 @@ ms_event_names = SeismicEvent.get_events_by_category("MS")
 as_event_names = SeismicEvent.get_events_by_category("AS")
 as_fq_event_names = SeismicEvent.get_events_by_category("AS_FQ")
 ce_event_names = SeismicEvent.get_events_by_category("CE")
+he_event_names = SeismicEvent.get_events_by_category("HE_T")
+
+print(he_event_names)
