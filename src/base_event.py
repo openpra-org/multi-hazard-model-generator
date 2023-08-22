@@ -46,9 +46,7 @@ class BaseEvent(ABC):
     def create_bei_file(self):
         pass
 
-    @abstractmethod
-    def create_bec_file(self):
-        pass
+
 
     @classmethod
     @abstractmethod

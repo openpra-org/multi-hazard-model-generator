@@ -155,41 +155,62 @@ class SeismicEvent(BaseEvent):
                     return True
         return False
 
-    def create_bec_file(self, output_directory, JSON_input):
+    def create_compound_events(self, output_directory, JSON_input,seismic_event_csv_path):
+
+        seismic_event_info = SeismicEvent.from_input_file(JSON_input)
+
+        # Access the parameters from the seismic_event object
+        aftershocks_params = seismic_event_info.aftershocks_params
+        mainshock_params = seismic_event_info.mainshock_params
+
+
 
         # Retrieve event names for each category
         as_event_names = SeismicEvent.get_events_by_category("AS")
         as_fq_event_names = SeismicEvent.get_events_by_category("AS_FQ")
 
-        file_path = os.path.join(output_directory, "seismic_event.BEC")  # BED file path
-
+        file_path_bec = os.path.join(output_directory, "seismic_event.BEC")  # BEC file path
+        file_path_bed = os.path.join(output_directory, "seismic_event.BED")  # BED file path
+        file_path_bei = os.path.join(output_directory, "seismic_event.BEI")  # BEI file path
         bec_event_names = []
 
-        if not os.path.exists(file_path):
-            with open(file_path, 'w') as file:
+        if not os.path.exists(file_path_bec):
+            with open(file_path_bec, 'w') as file:
                 file.write(
                     f"{self.project_name}=\n* Name  , tTypeName, COM, DLL Name, Proc Name, ModelType, PhaseType, Project \n * consts, params, ...\n * ^EOS\n")
 
         content = ""
+        content_bed = ""
+        content_bei = ""
 
         for as_event in as_event_names:
             # Extract the number after "AS-" from the event name
             as_number = int(as_event.split("-")[2])  # Extracts the number after "AS-"
+            comp_name = as_event.split("-")[0]  # Extracts the number after "AS-"
             # Find matching events in as_fq_event_names
             matching_fq_events = [fq_event for fq_event in as_fq_event_names if f"-AS-{as_number}-" in fq_event]
             # Combine and create BEC event names
             for fq_event in matching_fq_events:
                 combined_name = f"{as_event}-{fq_event.split('-')[1]}-{fq_event.split('-')[2]}-{fq_event.split('-')[5]}-{fq_event.split('-')[6]}-CE"
                 combined_name = re.sub(r'[^a-zA-Z0-9-]', '', combined_name)
-
+                time_int = int(fq_event.split('-')[-1])
                 bec_event_names.append(combined_name)
                 self.collect_event_name("CE", combined_name)
                 content += f"{combined_name},            0,COM,PLUGUTIL, MULT ,{self.analysis_type},{self.phase_type}, {self.project_name}\n"
+                if mainshock_params["correlation"] == "Yes":
+                    content_bed += f"{combined_name}, FAILURE OF {self.get_event_description(comp_name,seismic_event_csv_path)} DUE TO AS BIN {as_number} BY TIME {time_int}\n"
+                else:
+                    component_num = combined_name.split("-")[3]
+                    content_bed += f"{combined_name}, FAILURE OF {self.get_event_description(comp_name,seismic_event_csv_path)} TRAIN {component_num} DUE TO AS BIN {as_number} BY TIME {time_int}\n"
+
+                content_bei += f"{combined_name},         C,   ,  , 0.000E+000, 0, 0.000E+000, 0.000E+000, 0.000E+000,  ,  , 0.000E+000, 0,  , {self.analysis_type},{self.phase_type}, {self.project_name}\n"
                 content += f"{as_event}, {fq_event}\n"
                 content+= "^EOS\n"
         # Open the file again and write the content
-        with open(file_path, 'a') as file:
+        with open(file_path_bec, 'a') as file,  open(file_path_bed, 'a') as file_bed, open(file_path_bei, 'a') as file_bei :
             file.write(content)
+            file_bed.write(content_bed)
+            file_bei.write(content_bei)
 
 
 
@@ -369,3 +390,16 @@ class SeismicEvent(BaseEvent):
         seismic_event_info.input_params = input_params
         seismic_event_info.output_params = output_params
         return seismic_event_info
+
+
+    def get_event_description(self, event_name, input_csv_path):
+        seismic_event_data = pd.read_csv(input_csv_path)
+        try:
+            event_row = seismic_event_data[seismic_event_data['Event name'] == event_name]
+            if not event_row.empty:
+                event_description = event_row.iloc[0]['Event description']
+                return event_description
+        except KeyError:
+            pass  # Handle the case where 'Event name' or 'Event description' column is missing
+
+        return None  # Event description not found

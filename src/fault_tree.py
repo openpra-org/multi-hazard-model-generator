@@ -19,10 +19,10 @@ class FaultTree(BaseFaultTree):
         self.frequency_event_processed = False  # Flag to track if frequency event has been processed
     gate_name_categories = {}  # Define the class-level attribute
     fault_name_categories = {}
-    def write_mainshock_fault_tree(self, output_directory,Json_input,seismic_event_csv_path,ms_event_names,he_ms_names):
+    def write_mainshock_fault_tree(self, output_directory,json_input,seismic_event_csv_path,ms_event_names,he_ms_names):
 
         # Extracting information from JSON file
-        seismic_event_info = self.from_input_file(Json_input)
+        seismic_event_info = self.from_input_file(json_input)
         mainshock_params = seismic_event_info.mainshock_params
         num_mainshock_intervals = mainshock_params["num"]
         project_name = seismic_event_info.analysis_params["project"]
@@ -84,10 +84,9 @@ class FaultTree(BaseFaultTree):
                     file_ftl.write(f"{he_ms_names[index]} {event_name}\n")
                 file_ftl.write("^EOS\n")
 
+    def write_aftershock_fault_tree(self,output_directory,json_input,seismic_event_csv_path,ms_event_names,he_ms_names):
 
-
-        # Write fault tree description file
-
+        pass
 
 
 
