@@ -9,6 +9,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # Construct the path to the JSON input file
 json_filename = "input.json"
 json_file_path = os.path.join(current_dir, "..", "inputs", json_filename)
+seismic_event_csv_path = os.path.join(current_dir, "..", "inputs", "seismic_events.csv")
 
 # Construct the output directory path
 output_dir = os.path.join(current_dir, "..", "output", "general")
@@ -35,4 +36,4 @@ he_event_names = SeismicEvent.get_events_by_category("HE_MS")
 
 
 fault_tree_instance = FaultTree()
-fault_tree_instance.write_mainshock_fault_tree(output_dir,json_file_path,ms_event_names,he_event_names)
+fault_tree_instance.write_mainshock_fault_tree(output_dir,json_file_path,seismic_event_csv_path,ms_event_names,he_event_names)

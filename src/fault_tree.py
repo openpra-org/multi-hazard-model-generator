@@ -19,13 +19,14 @@ class FaultTree(BaseFaultTree):
         self.frequency_event_processed = False  # Flag to track if frequency event has been processed
     gate_name_categories = {}  # Define the class-level attribute
     fault_name_categories = {}
-    def write_mainshock_fault_tree(self, output_directory,Json_input,ms_event_names,he_ms_names):
+    def write_mainshock_fault_tree(self, output_directory,Json_input,seismic_event_csv_path,ms_event_names,he_ms_names):
 
         # Extracting information from JSON file
         seismic_event_info = self.from_input_file(Json_input)
         mainshock_params = seismic_event_info.mainshock_params
         num_mainshock_intervals = mainshock_params["num"]
         project_name = seismic_event_info.analysis_params["project"]
+        correlation = mainshock_params["correlation"]
 
         # Fault Tree logic file (FTL)
         file_path_ftl = os.path.join(output_directory, "fault_tree.FTL")  # FTL file path
@@ -39,6 +40,13 @@ class FaultTree(BaseFaultTree):
             for row in reshaped_event_names:
 
                 name_split = row[0].split("-")[:-1]
+                if correlation =="Yes":
+                    event_name = row[0].split("-")[0]
+                else:
+                    event_name = row[0].split("-")[0]
+                    component_num = row[0].split("-")[1]
+
+
                 # Modify each element in name_split using a list comprehension
                 modified_name_split = [re.sub(r'[^a-zA-Z0-9-]', '', part) for part in name_split]
 
@@ -47,7 +55,11 @@ class FaultTree(BaseFaultTree):
 
                 fault_tree_name = f"{combined_name}-FT"
                 self.collect_fault_tree_name("MS",fault_tree_name)
-                file_ftd.write(f"{fault_tree_name}           , MAINSHOCK FAULT TREE OF                 , S,  , {project_name}\n")
+                if correlation == "Yes":
+                    file_ftd.write(f"{fault_tree_name}           , MAINSHOCK FAULT TREE OF   {self.get_event_description(event_name,seismic_event_csv_path)}             , S,  , {project_name}\n")
+                else:
+                    file_ftd.write(f"{fault_tree_name}           , MAINSHOCK FAULT TREE OF   {self.get_event_description(event_name,seismic_event_csv_path)} TRAIN {component_num}             , S,  , {project_name}\n")
+
                 ms_ft_name = f"{project_name} ,   {fault_tree_name} = "
                 file_ftl.write(ms_ft_name + '\n')
 
@@ -103,8 +115,17 @@ class FaultTree(BaseFaultTree):
         except ValueError:
             return None  # "MS" not found
 
+    def get_event_description(self, event_name, input_csv_path):
+        seismic_event_data = pd.read_csv(input_csv_path)
+        try:
+            event_row = seismic_event_data[seismic_event_data['Event name'] == event_name]
+            if not event_row.empty:
+                event_description = event_row.iloc[0]['Event description']
+                return event_description
+        except KeyError:
+            pass  # Handle the case where 'Event name' or 'Event description' column is missing
 
-
+        return None  # Event description not found
 
 
 

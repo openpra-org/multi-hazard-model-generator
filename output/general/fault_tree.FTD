@@ -1,12 +1,12 @@
 G-PWR      =  
 *  Name                 , Description,        SubTree, Alternate, Project
-MDP-A-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
-MDP-B-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
-MDP-C-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
-MDP-D-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
-TDP-A-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
-TDP-B-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
-TDP-C-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
-CDP-A-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
-CDP-B-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
-CDP-C-MS-FT           , MAINSHOCK FAULT TREE OF                 , S,  , G-PWR
+MDP-A-MS-FT           , MAINSHOCK FAULT TREE OF   Motor Driven Pump TRAIN A             , S,  , G-PWR
+MDP-B-MS-FT           , MAINSHOCK FAULT TREE OF   Motor Driven Pump TRAIN B             , S,  , G-PWR
+MDP-C-MS-FT           , MAINSHOCK FAULT TREE OF   Motor Driven Pump TRAIN C             , S,  , G-PWR
+MDP-D-MS-FT           , MAINSHOCK FAULT TREE OF   Motor Driven Pump TRAIN D             , S,  , G-PWR
+TDP-A-MS-FT           , MAINSHOCK FAULT TREE OF   Auxilary Feedwater Turbine-Driven Pump TRAIN A             , S,  , G-PWR
+TDP-B-MS-FT           , MAINSHOCK FAULT TREE OF   Auxilary Feedwater Turbine-Driven Pump TRAIN B             , S,  , G-PWR
+TDP-C-MS-FT           , MAINSHOCK FAULT TREE OF   Auxilary Feedwater Turbine-Driven Pump TRAIN C             , S,  , G-PWR
+CDP-A-MS-FT           , MAINSHOCK FAULT TREE OF   Auxilary Feedwater Motor-DrivenPump TRAIN A             , S,  , G-PWR
+CDP-B-MS-FT           , MAINSHOCK FAULT TREE OF   Auxilary Feedwater Motor-DrivenPump TRAIN B             , S,  , G-PWR
+CDP-C-MS-FT           , MAINSHOCK FAULT TREE OF   Auxilary Feedwater Motor-DrivenPump TRAIN C             , S,  , G-PWR
