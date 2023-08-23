@@ -18,7 +18,7 @@ class SeismicEvent(BaseEvent):
         self.mainshock_params = None
         self.frequency_event_processed = False  # Flag to track if frequency event has been processed
 
-    def create_bei_file(self, output_directory, JSON_input):
+    def create_bei_file(self, output_directory, json_input):
         self.FdT = "J"
         self.UdT = "S"
         self.PF = ""
@@ -29,7 +29,7 @@ class SeismicEvent(BaseEvent):
         self.UdValue2 = self.beta_u
 
         # Call from_input_file method to get the mainshock and aftershock events parameters
-        seismic_event_info = SeismicEvent.from_input_file(JSON_input)
+        seismic_event_info = SeismicEvent.from_input_file(json_input)
 
         # Access the parameters from the seismic_event object
         aftershocks_params = seismic_event_info.aftershocks_params
@@ -117,11 +117,11 @@ class SeismicEvent(BaseEvent):
 
 
 
-    def create_bed_file(self, output_directory, JSON_input):
+    def create_bed_file(self, output_directory, json_input):
         file_path = os.path.join(output_directory, "seismic_event.BED")  # BED file path
 
         # Call from_input_file method to get the mainshock and aftershock events parameters
-        seismic_event_info = SeismicEvent.from_input_file(JSON_input)
+        seismic_event_info = SeismicEvent.from_input_file(json_input)
 
         # Access the parameters from the seismic_event object
         aftershocks_params = seismic_event_info.aftershocks_params

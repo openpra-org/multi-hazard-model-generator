@@ -1,72 +1,71 @@
-G-PWR      =  
-*  Name                 , Description, Project
-MDP-A-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-MDP-A-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-MDP-A-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-MDP-A-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-MDP-A-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-MDP-A-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-MDP-A-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
-MDP-B-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-MDP-B-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-MDP-B-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-MDP-B-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-MDP-B-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-MDP-B-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-MDP-B-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
-MDP-C-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-MDP-C-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-MDP-C-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-MDP-C-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-MDP-C-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-MDP-C-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-MDP-C-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
-MDP-D-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-MDP-D-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-MDP-D-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-MDP-D-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-MDP-D-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-MDP-D-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-MDP-D-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
-TDP-A-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-TDP-A-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-TDP-A-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-TDP-A-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-TDP-A-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-TDP-A-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-TDP-A-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
-TDP-B-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-TDP-B-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-TDP-B-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-TDP-B-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-TDP-B-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-TDP-B-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-TDP-B-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
-TDP-C-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-TDP-C-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-TDP-C-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-TDP-C-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-TDP-C-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-TDP-C-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-TDP-C-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
-CDP-A-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-CDP-A-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-CDP-A-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-CDP-A-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-CDP-A-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-CDP-A-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-CDP-A-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
-CDP-B-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-CDP-B-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-CDP-B-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-CDP-B-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-CDP-B-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-CDP-B-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-CDP-B-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
-CDP-C-MS-1-GT    , MAINSHOCK BIN 1 , G-PWR
-CDP-C-MS-2-GT    , MAINSHOCK BIN 2 , G-PWR
-CDP-C-MS-3-GT    , MAINSHOCK BIN 3 , G-PWR
-CDP-C-MS-4-GT    , MAINSHOCK BIN 4 , G-PWR
-CDP-C-MS-5-GT    , MAINSHOCK BIN 5 , G-PWR
-CDP-C-MS-6-GT    , MAINSHOCK BIN 6 , G-PWR
-CDP-C-MS-7-GT    , MAINSHOCK BIN 7 , G-PWR
+G-PWR  =
+MDP-A-MS-1-GT  , Motor Driven Pump MAINSHOCK BIN 1 TRAIN-A, G-PWR 
+MDP-A-MS-2-GT  , Motor Driven Pump MAINSHOCK BIN 2 TRAIN-A, G-PWR 
+MDP-A-MS-3-GT  , Motor Driven Pump MAINSHOCK BIN 3 TRAIN-A, G-PWR 
+MDP-A-MS-4-GT  , Motor Driven Pump MAINSHOCK BIN 4 TRAIN-A, G-PWR 
+MDP-A-MS-5-GT  , Motor Driven Pump MAINSHOCK BIN 5 TRAIN-A, G-PWR 
+MDP-A-MS-6-GT  , Motor Driven Pump MAINSHOCK BIN 6 TRAIN-A, G-PWR 
+MDP-A-MS-7-GT  , Motor Driven Pump MAINSHOCK BIN 7 TRAIN-A, G-PWR 
+MDP-B-MS-1-GT  , Motor Driven Pump MAINSHOCK BIN 1 TRAIN-B, G-PWR 
+MDP-B-MS-2-GT  , Motor Driven Pump MAINSHOCK BIN 2 TRAIN-B, G-PWR 
+MDP-B-MS-3-GT  , Motor Driven Pump MAINSHOCK BIN 3 TRAIN-B, G-PWR 
+MDP-B-MS-4-GT  , Motor Driven Pump MAINSHOCK BIN 4 TRAIN-B, G-PWR 
+MDP-B-MS-5-GT  , Motor Driven Pump MAINSHOCK BIN 5 TRAIN-B, G-PWR 
+MDP-B-MS-6-GT  , Motor Driven Pump MAINSHOCK BIN 6 TRAIN-B, G-PWR 
+MDP-B-MS-7-GT  , Motor Driven Pump MAINSHOCK BIN 7 TRAIN-B, G-PWR 
+MDP-C-MS-1-GT  , Motor Driven Pump MAINSHOCK BIN 1 TRAIN-C, G-PWR 
+MDP-C-MS-2-GT  , Motor Driven Pump MAINSHOCK BIN 2 TRAIN-C, G-PWR 
+MDP-C-MS-3-GT  , Motor Driven Pump MAINSHOCK BIN 3 TRAIN-C, G-PWR 
+MDP-C-MS-4-GT  , Motor Driven Pump MAINSHOCK BIN 4 TRAIN-C, G-PWR 
+MDP-C-MS-5-GT  , Motor Driven Pump MAINSHOCK BIN 5 TRAIN-C, G-PWR 
+MDP-C-MS-6-GT  , Motor Driven Pump MAINSHOCK BIN 6 TRAIN-C, G-PWR 
+MDP-C-MS-7-GT  , Motor Driven Pump MAINSHOCK BIN 7 TRAIN-C, G-PWR 
+MDP-D-MS-1-GT  , Motor Driven Pump MAINSHOCK BIN 1 TRAIN-D, G-PWR 
+MDP-D-MS-2-GT  , Motor Driven Pump MAINSHOCK BIN 2 TRAIN-D, G-PWR 
+MDP-D-MS-3-GT  , Motor Driven Pump MAINSHOCK BIN 3 TRAIN-D, G-PWR 
+MDP-D-MS-4-GT  , Motor Driven Pump MAINSHOCK BIN 4 TRAIN-D, G-PWR 
+MDP-D-MS-5-GT  , Motor Driven Pump MAINSHOCK BIN 5 TRAIN-D, G-PWR 
+MDP-D-MS-6-GT  , Motor Driven Pump MAINSHOCK BIN 6 TRAIN-D, G-PWR 
+MDP-D-MS-7-GT  , Motor Driven Pump MAINSHOCK BIN 7 TRAIN-D, G-PWR 
+TDP-A-MS-1-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 1 TRAIN-A, G-PWR 
+TDP-A-MS-2-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 2 TRAIN-A, G-PWR 
+TDP-A-MS-3-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 3 TRAIN-A, G-PWR 
+TDP-A-MS-4-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 4 TRAIN-A, G-PWR 
+TDP-A-MS-5-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 5 TRAIN-A, G-PWR 
+TDP-A-MS-6-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 6 TRAIN-A, G-PWR 
+TDP-A-MS-7-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 7 TRAIN-A, G-PWR 
+TDP-B-MS-1-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 1 TRAIN-B, G-PWR 
+TDP-B-MS-2-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 2 TRAIN-B, G-PWR 
+TDP-B-MS-3-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 3 TRAIN-B, G-PWR 
+TDP-B-MS-4-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 4 TRAIN-B, G-PWR 
+TDP-B-MS-5-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 5 TRAIN-B, G-PWR 
+TDP-B-MS-6-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 6 TRAIN-B, G-PWR 
+TDP-B-MS-7-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 7 TRAIN-B, G-PWR 
+TDP-C-MS-1-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 1 TRAIN-C, G-PWR 
+TDP-C-MS-2-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 2 TRAIN-C, G-PWR 
+TDP-C-MS-3-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 3 TRAIN-C, G-PWR 
+TDP-C-MS-4-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 4 TRAIN-C, G-PWR 
+TDP-C-MS-5-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 5 TRAIN-C, G-PWR 
+TDP-C-MS-6-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 6 TRAIN-C, G-PWR 
+TDP-C-MS-7-GT  , Auxilary Feedwater Turbine-Driven Pump MAINSHOCK BIN 7 TRAIN-C, G-PWR 
+CDP-A-MS-1-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 1 TRAIN-A, G-PWR 
+CDP-A-MS-2-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 2 TRAIN-A, G-PWR 
+CDP-A-MS-3-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 3 TRAIN-A, G-PWR 
+CDP-A-MS-4-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 4 TRAIN-A, G-PWR 
+CDP-A-MS-5-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 5 TRAIN-A, G-PWR 
+CDP-A-MS-6-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 6 TRAIN-A, G-PWR 
+CDP-A-MS-7-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 7 TRAIN-A, G-PWR 
+CDP-B-MS-1-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 1 TRAIN-B, G-PWR 
+CDP-B-MS-2-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 2 TRAIN-B, G-PWR 
+CDP-B-MS-3-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 3 TRAIN-B, G-PWR 
+CDP-B-MS-4-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 4 TRAIN-B, G-PWR 
+CDP-B-MS-5-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 5 TRAIN-B, G-PWR 
+CDP-B-MS-6-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 6 TRAIN-B, G-PWR 
+CDP-B-MS-7-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 7 TRAIN-B, G-PWR 
+CDP-C-MS-1-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 1 TRAIN-C, G-PWR 
+CDP-C-MS-2-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 2 TRAIN-C, G-PWR 
+CDP-C-MS-3-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 3 TRAIN-C, G-PWR 
+CDP-C-MS-4-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 4 TRAIN-C, G-PWR 
+CDP-C-MS-5-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 5 TRAIN-C, G-PWR 
+CDP-C-MS-6-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 6 TRAIN-C, G-PWR 
+CDP-C-MS-7-GT  , Auxilary Feedwater Motor-DrivenPump MAINSHOCK BIN 7 TRAIN-C, G-PWR 

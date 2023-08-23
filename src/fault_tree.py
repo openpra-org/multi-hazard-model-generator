@@ -2,7 +2,7 @@ from imports import *
 from base_fault import BaseFaultTree
 from seismic_event import SeismicEvent
 
-class FaultTree(BaseFaultTree):
+class SeismicFaultTree(BaseFaultTree):
 
     def __init__(self, event_description="", phase_type="", probability_parameters=None,
                  event_name="", project_name="", analysis_type="", Lambda=0, tau=0, prob=0,
@@ -19,7 +19,96 @@ class FaultTree(BaseFaultTree):
         self.frequency_event_processed = False  # Flag to track if frequency event has been processed
     gate_name_categories = {}  # Define the class-level attribute
     fault_name_categories = {}
-    def write_mainshock_fault_tree(self, output_directory,json_input,seismic_event_csv_path,ms_event_names,he_ms_names):
+
+    def write_mainshock_fault_tree(self,output_directory,json_input):
+        # Extracting information from JSON file
+        seismic_event_info = self.from_input_file(json_input)
+        mainshock_params = seismic_event_info.mainshock_params
+        num_mainshock_intervals = mainshock_params["num"]
+        project_name = seismic_event_info.analysis_params["project"]
+        correlation = mainshock_params["correlation"]
+
+        # Fault Tree logic file (FTL)
+        file_path_ftl = os.path.join(output_directory, "fault_tree.FTL")  # FTL file path
+        file_path_ftd = os.path.join(output_directory, "fault_tree.FTD")  # FTD file path
+        file_path_gtd = os.path.join(output_directory, "fault_tree.GTD")  # FTD file path
+
+        if correlation == "Yes":
+            ftl_content = ""
+            ftd_content = ""
+            gtd_content = ""
+
+            with open(file_path_ftl, 'a') as file_ftl, open(file_path_ftd, 'a') as file_ftd, open(file_path_gtd,
+                                                                                                    'a') as file_gtd:
+
+                if not file_ftd.tell():  # Check if the file is empty
+                    file_ftd.write(f"{self.project_name}  =\n")
+
+                if not file_gtd.tell():  # Check if the file is empty
+                    file_gtd.write(f"{self.project_name}  =\n")
+
+
+                ssc_name = self.event_name
+                ft_name= ssc_name+"-MS-FT"
+
+                #ft_name = ssc_name.join("-MS-FT")
+                file_ftl.write(f"{self.project_name},{ft_name} = \n")
+                ftd_content += f"{ft_name}, {self.event_description} MAINSHOCK  FAILURE    , S,  , {self.project_name} \n"
+
+                file_ftl.write(f"{ft_name}            OR  ")
+                for ms_bin in range(num_mainshock_intervals):
+                    gt_name = ssc_name+ f"-MS-{ms_bin+1}-GT  "
+                    gtd_content+= f"{gt_name}, {self.event_description} MAINSHOCK BIN {ms_bin+1}, {self.project_name} \n"
+                    ftl_content += f"{ssc_name}-MS-{ms_bin+1}-GT            AND  HE-MS-{ms_bin+1}   {ssc_name}-MS-{ms_bin+1}  \n"
+                    file_ftl.write(gt_name)
+                file_ftl.write("\n")
+                ftl_content += "^EOS\n"
+                file_ftl.write(ftl_content)
+                file_gtd.write(gtd_content)
+                file_ftd.write(ftd_content)
+        else:
+
+            for event_count in range(1, self.count + 1):
+                event_count_str = "" if self.count == 1 else f"-{chr(64 + event_count)}"
+                ftl_content = ""
+                ftd_content = ""
+                gtd_content = ""
+
+                with open(file_path_ftl, 'a') as file_ftl, open(file_path_ftd, 'a') as file_ftd, open(file_path_gtd,
+                                                                                                        'a') as file_gtd:
+
+                    if not file_ftd.tell():  # Check if the file is empty
+                        file_ftd.write(f"{self.project_name}  =\n")
+
+                    if not file_gtd.tell():  # Check if the file is empty
+                        file_gtd.write(f"{self.project_name}  =\n")
+
+                    ssc_name = self.event_name
+                    ft_name = ssc_name+  f"{event_count_str}-MS-FT"
+                    ftd_content += f"{ft_name}, {self.event_description} TRAIN{event_count_str} MAINSHOCK  FAILURE    , S,  , {self.project_name} \n"
+
+                    # ft_name = ssc_name.join("-MS-FT")
+                    file_ftl.write(f"{self.project_name},   {ft_name} = \n")
+
+                    file_ftl.write(f"{ft_name}            OR  ")
+                    for ms_bin in range(num_mainshock_intervals):
+                        gt_name = ssc_name + f"{event_count_str}-MS-{ms_bin + 1}-GT  "
+                        gtd_content += f"{gt_name}, {self.event_description} MAINSHOCK BIN {ms_bin + 1} TRAIN{event_count_str}, {self.project_name} \n"
+                        ftl_content += f"{ssc_name}{event_count_str}-MS-{ms_bin + 1}-GT            AND  HE-MS-{ms_bin + 1}   {ssc_name}{event_count_str}-MS-{ms_bin + 1}  \n"
+                        file_ftl.write(gt_name)
+                    file_ftl.write("\n")
+                    ftl_content += "^EOS\n"
+                    file_ftl.write(ftl_content)
+                    file_gtd.write(gtd_content)
+                    file_ftd.write(ftd_content)
+
+
+
+
+
+
+
+    def write_mainshock_fault_tree1(self, output_directory,json_input,seismic_event_csv_path,ms_event_names,he_ms_names):
 
         # Extracting information from JSON file
         seismic_event_info = self.from_input_file(json_input)
@@ -131,8 +220,6 @@ class FaultTree(BaseFaultTree):
 
 
 
-
-
     @classmethod
     def from_input_file(cls, input_file_path):
 
@@ -155,6 +242,7 @@ class FaultTree(BaseFaultTree):
 
 
 
+    @classmethod
     def from_csv(cls, path,seismic_event_csv):  # This method reads the seismic event csv file
         complete_path = os.path.join(path, seismic_event_csv)
 
