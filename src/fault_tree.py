@@ -50,7 +50,7 @@ class SeismicFaultTree(BaseFaultTree):
 
                 ssc_name = self.event_name
                 ft_name= ssc_name+"-MS-FT"
-
+                self.collect_fault_tree_name("MS",ft_name)
                 #ft_name = ssc_name.join("-MS-FT")
                 file_ftl.write(f"{self.project_name},{ft_name} = \n")
                 ftd_content += f"{ft_name}, {self.event_description} MAINSHOCK  FAILURE    , S,  , {self.project_name} \n"
@@ -59,6 +59,8 @@ class SeismicFaultTree(BaseFaultTree):
                 for ms_bin in range(num_mainshock_intervals):
                     gt_name = ssc_name+ f"-MS-{ms_bin+1}-GT  "
                     gtd_content+= f"{gt_name}, {self.event_description} MAINSHOCK BIN {ms_bin+1}, {self.project_name} \n"
+                    self.collect_gate_name("MS", gt_name)
+
                     ftl_content += f"{ssc_name}-MS-{ms_bin+1}-GT            AND  HE-MS-{ms_bin+1}   {ssc_name}-MS-{ms_bin+1}  \n"
                     file_ftl.write(gt_name)
                 file_ftl.write("\n")
@@ -85,6 +87,8 @@ class SeismicFaultTree(BaseFaultTree):
 
                     ssc_name = self.event_name
                     ft_name = ssc_name+  f"{event_count_str}-MS-FT"
+                    self.collect_fault_tree_name("MS", ft_name)
+
                     ftd_content += f"{ft_name}, {self.event_description} TRAIN{event_count_str} MAINSHOCK  FAILURE    , S,  , {self.project_name} \n"
 
                     # ft_name = ssc_name.join("-MS-FT")
@@ -93,6 +97,8 @@ class SeismicFaultTree(BaseFaultTree):
                     file_ftl.write(f"{ft_name}            OR  ")
                     for ms_bin in range(num_mainshock_intervals):
                         gt_name = ssc_name + f"{event_count_str}-MS-{ms_bin + 1}-GT  "
+                        self.collect_gate_name("MS", gt_name)
+
                         gtd_content += f"{gt_name}, {self.event_description} MAINSHOCK BIN {ms_bin + 1} TRAIN{event_count_str}, {self.project_name} \n"
                         ftl_content += f"{ssc_name}{event_count_str}-MS-{ms_bin + 1}-GT            AND  HE-MS-{ms_bin + 1}   {ssc_name}{event_count_str}-MS-{ms_bin + 1}  \n"
                         file_ftl.write(gt_name)
@@ -104,80 +110,222 @@ class SeismicFaultTree(BaseFaultTree):
 
 
 
-
-
-
-
-    def write_mainshock_fault_tree1(self, output_directory,json_input,seismic_event_csv_path,ms_event_names,he_ms_names):
+    def write_aftershock_fault_tree(self,output_directory,json_input):
 
         # Extracting information from JSON file
         seismic_event_info = self.from_input_file(json_input)
         mainshock_params = seismic_event_info.mainshock_params
         num_mainshock_intervals = mainshock_params["num"]
         project_name = seismic_event_info.analysis_params["project"]
+        aftershocks_params = seismic_event_info.aftershocks_params
         correlation = mainshock_params["correlation"]
-
+        delta_t = aftershocks_params["dt"]
         # Fault Tree logic file (FTL)
         file_path_ftl = os.path.join(output_directory, "fault_tree.FTL")  # FTL file path
         file_path_ftd = os.path.join(output_directory, "fault_tree.FTD")  # FTD file path
         file_path_gtd = os.path.join(output_directory, "fault_tree.GTD")  # FTD file path
-        reshaped_event_names = np.reshape(ms_event_names, (-1, num_mainshock_intervals))
 
-        with open(file_path_ftl, 'a') as file_ftl, open(file_path_ftd, 'a') as file_ftd, open(file_path_gtd,'a') as file_gtd:
-            file_ftd.write(f"{project_name}      =  \n*  Name                 , Description,        SubTree, Alternate, Project\n")
-            file_gtd.write(f"{project_name}      =  \n*  Name                 , Description, Project\n")
-            for row in reshaped_event_names:
+        with open(file_path_ftl, 'a') as file_ftl, open(file_path_ftd, 'a') as file_ftd, open(file_path_gtd,
+                                                                                              'a') as file_gtd:
+            if correlation == "Yes":
+                # Main seismic fault tree
+                ssc_name = self.event_name
+                seismic_fault_tree_name = f"{ssc_name}-SEIS-FT"
+                file_ftl.write(f"{self.project_name},  {seismic_fault_tree_name} =\n")
+                ms_lines = [f"{ssc_name}-MS-{ms_bin + 1}-AF-FT                 TRAN" for ms_bin in
+                            range(num_mainshock_intervals)]
+                file_ftl.write('\n'.join(ms_lines) + '\n')
 
-                name_split = row[0].split("-")[:-1]
-                if correlation =="Yes":
-                    event_name = row[0].split("-")[0]
-                else:
-                    event_name = row[0].split("-")[0]
-                    component_num = row[0].split("-")[1]
+                file_ftl.write(f"{seismic_fault_tree_name}                      OR  {ssc_name}-MS-FT  {ssc_name}-AS-GT\n")  # 1-CN-TK-1-SEIS-AS-F-GT
 
-
-                # Modify each element in name_split using a list comprehension
-                modified_name_split = [re.sub(r'[^a-zA-Z0-9-]', '', part) for part in name_split]
-
-                # Join the modified elements back together with "-"
-                combined_name = "-".join(modified_name_split)
-
-                fault_tree_name = f"{combined_name}-FT"
-                self.collect_fault_tree_name("MS",fault_tree_name)
-                if correlation == "Yes":
-                    file_ftd.write(f"{fault_tree_name}           , MAINSHOCK FAULT TREE OF   {self.get_event_description(event_name,seismic_event_csv_path)}             , S,  , {project_name}\n")
-                else:
-                    file_ftd.write(f"{fault_tree_name}           , MAINSHOCK FAULT TREE OF   {self.get_event_description(event_name,seismic_event_csv_path)} TRAIN {component_num}             , S,  , {project_name}\n")
-
-                ms_ft_name = f"{project_name} ,   {fault_tree_name} = "
-                file_ftl.write(ms_ft_name + '\n')
-
-
-                ms_ft_name = f"{fault_tree_name}             OR "
-                file_ftl.write(ms_ft_name)
-                for event_name in row:
-
-                    bin =self.extract_element_after_ms(event_name)
-
-
-                    # Add "GT" prefix to the event name and write it to the file
-                    gate_name = f"{event_name}-GT  "
-                    file_gtd.write(f"{gate_name}  , MAINSHOCK BIN {bin} , {project_name}\n")
-                    self.collect_gate_name("MS",gate_name)
-                    file_ftl.write(gate_name)
-                file_ftl.write('\n')
-
-                for index ,event_name in enumerate(row):
-                    gt_comp = f"{event_name}-GT                  AND  "
-                    file_ftl.write(gt_comp)
-                    file_ftl.write(f"{he_ms_names[index]} {event_name}\n")
+                file_ftl.write(f"{ssc_name}-AS-GT                            AND {ssc_name}-AS-F-GT  NOT-{ssc_name}-MS-FT \n")
+                file_ftl.write(f"{ssc_name}-AS-F-GT                          OR  ")
+                for ms_bin in range(num_mainshock_intervals):
+                    file_ftl.write(f"{ssc_name}-MS-{ms_bin+1}-AF-FT  ")
+                file_ftl.write("\n")
+                file_ftl.write(f"{ssc_name}-MS-FT                              TRAN\n")
+                file_ftl.write(f"NOT-{ssc_name}-MS-FT            NOR {ssc_name}-MS-FT \n")
                 file_ftl.write("^EOS\n")
 
-    def write_aftershock_fault_tree(self,output_directory,json_input,seismic_event_csv_path,ms_event_names,he_ms_names):
 
-        pass
+                # Inside the aftershock fault tress
+                for ms_bin in range(num_mainshock_intervals):
+                    file_ftl.write(f"{self.project_name},  {ssc_name}-MS-{ms_bin + 1}-AF-FT  = \n")
+                    for T in range(int(self.start_time)+int(delta_t),int(self.end_time+int(delta_t)),int(delta_t)):
+                        file_ftl.write(f"{ssc_name}-MS-{ms_bin+1}-T-{T}-FT                    TRAN\n")
+                    file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-AF-FT                  AND     HE-MS-{ms_bin+1}  {ssc_name}-MS-{ms_bin+1}-AF-GT1\n")
+                    file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-AF-GT1                    OR     ")
+                    for T in range(int(self.start_time+int(delta_t)),int(self.end_time+int(delta_t)),int(delta_t)):
+                        file_ftl.write(f"{ssc_name}-MS-{ms_bin+1}-T-{T}-GT  ")
+                    file_ftl.write("\n")
+                    for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)), int(delta_t)):
+                        file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT                 AND   HE-T-{T}  {ssc_name}-MS-{ms_bin+1}-T-{T}-FT ")
+
+                        for Time in range(int(self.start_time + int(delta_t)),T,delta_t):
+                            file_ftl.write(f"NOT-{ssc_name}-MS-{ms_bin+1}-T-{Time}-AF-GT  ")
 
 
+                        file_ftl.write("\n")
+
+                    for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)), int(delta_t)):
+                        file_ftl.write(f"NOT-{ssc_name}-MS-{ms_bin+1}-T-{T}-AF-GT             NOR   {ssc_name}-MS-{ms_bin+1}-T-{T}-FT\n")
+
+                    file_ftl.write("^EOS\n")
+
+                    # Aftershock fault tree at time T
+                    for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)), int(delta_t)):
+                        file_ftl.write(f"{self.project_name},   {ssc_name}-MS-{ms_bin+1}-T-{T}-FT = \n")
+                        file_ftl.write(f"{ssc_name}-MS-{ms_bin+1}-T-{T}-FT =                   OR    ")
+                        for af_bin_num in range(aftershocks_params["num"]-1):
+                            file_ftl.write(f"{ssc_name}-AS-{af_bin_num+1}-MS-{ms_bin+1}-T-{T}-CE  ")
+                        file_ftl.write("\n")
+                        file_ftl.write("^EOS\n")
+            else:
+                for event_count in range(1, self.count + 1):
+                    event_count_str = "" if self.count == 1 else f"-{chr(64 + event_count)}"
+
+                    ssc_name = self.event_name +event_count_str
+
+                    # Main seismic fault tree
+                    seismic_fault_tree_name = f"{ssc_name}-SEIS-FT"
+                    file_ftl.write(f"{self.project_name},  {seismic_fault_tree_name} =\n")
+                    ms_lines = [f"{ssc_name}-MS-{ms_bin + 1}-AF-FT                 TRAN" for ms_bin in
+                                range(num_mainshock_intervals)]
+                    file_ftl.write('\n'.join(ms_lines) + '\n')
+
+                    file_ftl.write(
+                        f"{seismic_fault_tree_name}                      OR  {ssc_name}-MS-FT  {ssc_name}-AS-GT\n")  # 1-CN-TK-1-SEIS-AS-F-GT
+
+                    file_ftl.write(
+                        f"{ssc_name}-AS-GT                            AND {ssc_name}-AS-F-GT  NOT-{ssc_name}-MS-FT \n")
+                    file_ftl.write(f"{ssc_name}-AS-F-GT                          OR  ")
+                    for ms_bin in range(num_mainshock_intervals):
+                        file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-AF-FT  ")
+                    file_ftl.write("\n")
+                    file_ftl.write(f"{ssc_name}-MS-FT                              TRAN\n")
+                    file_ftl.write(f"NOT-{ssc_name}-MS-FT            NOR {ssc_name}-MS-FT \n")
+                    file_ftl.write("^EOS\n")
+
+                    # Inside the aftershock fault tress
+                    for ms_bin in range(num_mainshock_intervals):
+                        file_ftl.write(f"{self.project_name},  {ssc_name}-MS-{ms_bin + 1}-AF-FT  = \n")
+                        for T in range(int(self.start_time) + int(delta_t), int(self.end_time + int(delta_t)),
+                                       int(delta_t)):
+                            file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-FT                    TRAN\n")
+                        file_ftl.write(
+                            f"{ssc_name}-MS-{ms_bin + 1}-AF-FT                  AND     HE-MS-{ms_bin + 1}  {ssc_name}-MS-{ms_bin + 1}-AF-GT1\n")
+                        file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-AF-GT1                    OR     ")
+                        for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)),
+                                       int(delta_t)):
+                            file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT  ")
+                        file_ftl.write("\n")
+                        for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)),
+                                       int(delta_t)):
+                            file_ftl.write(
+                                f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT                 AND   HE-T-{T}  {ssc_name}-MS-{ms_bin + 1}-T-{T}-FT ")
+
+                            for Time in range(int(self.start_time + int(delta_t)), T, delta_t):
+                                file_ftl.write(f"NOT-{ssc_name}-MS-{ms_bin + 1}-T-{Time}-AF-GT  ")
+
+                            file_ftl.write("\n")
+
+                        for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)),
+                                       int(delta_t)):
+                            file_ftl.write(
+                                f"NOT-{ssc_name}-MS-{ms_bin + 1}-T-{T}-AF-GT             NOR   {ssc_name}-MS-{ms_bin + 1}-T-{T}-FT\n")
+
+                        file_ftl.write("^EOS\n")
+
+                        # Aftershock fault tree at time T
+                        for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)),
+                                       int(delta_t)):
+                            file_ftl.write(f"{self.project_name},   {ssc_name}-MS-{ms_bin + 1}-T-{T}-FT = \n")
+                            file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-FT =                   OR    ")
+                            for af_bin_num in range(aftershocks_params["num"] - 1):
+                                file_ftl.write(f"{ssc_name}-AS-{af_bin_num + 1}-MS-{ms_bin + 1}-T-{T}-CE  ")
+                            file_ftl.write("\n")
+                            file_ftl.write("^EOS\n")
+
+
+
+
+
+    # def write_mainshock_fault_tree1(self, output_directory,json_input,seismic_event_csv_path,ms_event_names,he_ms_names):
+    #
+    #     # Extracting information from JSON file
+    #     seismic_event_info = self.from_input_file(json_input)
+    #     mainshock_params = seismic_event_info.mainshock_params
+    #     num_mainshock_intervals = mainshock_params["num"]
+    #     project_name = seismic_event_info.analysis_params["project"]
+    #     correlation = mainshock_params["correlation"]
+    #
+    #     # Fault Tree logic file (FTL)
+    #     file_path_ftl = os.path.join(output_directory, "fault_tree.FTL")  # FTL file path
+    #     file_path_ftd = os.path.join(output_directory, "fault_tree.FTD")  # FTD file path
+    #     file_path_gtd = os.path.join(output_directory, "fault_tree.GTD")  # FTD file path
+    #     reshaped_event_names = np.reshape(ms_event_names, (-1, num_mainshock_intervals))
+    #
+    #     with open(file_path_ftl, 'a') as file_ftl, open(file_path_ftd, 'a') as file_ftd, open(file_path_gtd,'a') as file_gtd:
+    #         file_ftd.write(f"{project_name}      =  \n*  Name                 , Description,        SubTree, Alternate, Project\n")
+    #         file_gtd.write(f"{project_name}      =  \n*  Name                 , Description, Project\n")
+    #         for row in reshaped_event_names:
+    #
+    #             name_split = row[0].split("-")[:-1]
+    #             if correlation =="Yes":
+    #                 event_name = row[0].split("-")[0]
+    #             else:
+    #                 event_name = row[0].split("-")[0]
+    #                 component_num = row[0].split("-")[1]
+    #
+    #
+    #             # Modify each element in name_split using a list comprehension
+    #             modified_name_split = [re.sub(r'[^a-zA-Z0-9-]', '', part) for part in name_split]
+    #
+    #             # Join the modified elements back together with "-"
+    #             combined_name = "-".join(modified_name_split)
+    #
+    #             fault_tree_name = f"{combined_name}-FT"
+    #             self.collect_fault_tree_name("MS",fault_tree_name)
+    #             if correlation == "Yes":
+    #                 file_ftd.write(f"{fault_tree_name}           , MAINSHOCK FAULT TREE OF   {self.get_event_description(event_name,seismic_event_csv_path)}             , S,  , {project_name}\n")
+    #             else:
+    #                 file_ftd.write(f"{fault_tree_name}           , MAINSHOCK FAULT TREE OF   {self.get_event_description(event_name,seismic_event_csv_path)} TRAIN {component_num}             , S,  , {project_name}\n")
+    #
+    #             ms_ft_name = f"{project_name} ,   {fault_tree_name} = "
+    #             file_ftl.write(ms_ft_name + '\n')
+    #
+    #
+    #             ms_ft_name = f"{fault_tree_name}             OR "
+    #             file_ftl.write(ms_ft_name)
+    #             for event_name in row:
+    #
+    #                 bin =self.extract_element_after_ms(event_name)
+    #
+    #
+    #                 # Add "GT" prefix to the event name and write it to the file
+    #                 gate_name = f"{event_name}-GT  "
+    #                 file_gtd.write(f"{gate_name}  , MAINSHOCK BIN {bin} , {project_name}\n")
+    #                 self.collect_gate_name("MS",gate_name)
+    #                 file_ftl.write(gate_name)
+    #             file_ftl.write('\n')
+    #
+    #             for index ,event_name in enumerate(row):
+    #                 gt_comp = f"{event_name}-GT                  AND  "
+    #                 file_ftl.write(gt_comp)
+    #                 file_ftl.write(f"{he_ms_names[index]} {event_name}\n")
+    #             file_ftl.write("^EOS\n")
+
+
+
+    @classmethod
+    def get_fault_by_category(cls, category):
+        category_of_fault_tree = cls.fault_name_categories.get(category, [])
+        return category_of_fault_tree
+
+    @classmethod
+    def get_gate_by_category(cls, category):
+        category_of_gate = cls.gate_name_categories.get(category, [])
+        return category_of_gate
 
     @classmethod
     def collect_gate_name(cls, category, gate_name):
