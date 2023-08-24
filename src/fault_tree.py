@@ -53,12 +53,12 @@ class SeismicFaultTree(BaseFaultTree):
                 self.collect_fault_tree_name("MS",ft_name)
                 #ft_name = ssc_name.join("-MS-FT")
                 file_ftl.write(f"{self.project_name},{ft_name} = \n")
-                ftd_content += f"{ft_name}, {self.event_description} MAINSHOCK  FAILURE    , S,  , {self.project_name} \n"
+                ftd_content += f"{ft_name}                , {self.event_description} MAINSHOCK  FAILURE    , S,  , {self.project_name} \n"
 
                 file_ftl.write(f"{ft_name}            OR  ")
                 for ms_bin in range(num_mainshock_intervals):
                     gt_name = ssc_name+ f"-MS-{ms_bin+1}-GT  "
-                    gtd_content+= f"{gt_name}, {self.event_description} MAINSHOCK BIN {ms_bin+1}, {self.project_name} \n"
+                    gtd_content+= f"{gt_name}           , {self.event_description} MAINSHOCK BIN {ms_bin+1}, {self.project_name} \n"
                     self.collect_gate_name("MS", gt_name)
 
                     ftl_content += f"{ssc_name}-MS-{ms_bin+1}-GT            AND  HE-MS-{ms_bin+1}   {ssc_name}-MS-{ms_bin+1}  \n"
@@ -89,7 +89,7 @@ class SeismicFaultTree(BaseFaultTree):
                     ft_name = ssc_name+  f"{event_count_str}-MS-FT"
                     self.collect_fault_tree_name("MS", ft_name)
 
-                    ftd_content += f"{ft_name}, {self.event_description} TRAIN{event_count_str} MAINSHOCK  FAILURE    , S,  , {self.project_name} \n"
+                    ftd_content += f"{ft_name}                       , {self.event_description} TRAIN{event_count_str} MAINSHOCK  FAILURE    , S,  , {self.project_name} \n"
 
                     # ft_name = ssc_name.join("-MS-FT")
                     file_ftl.write(f"{self.project_name},   {ft_name} = \n")
@@ -124,22 +124,31 @@ class SeismicFaultTree(BaseFaultTree):
         file_path_ftl = os.path.join(output_directory, "fault_tree.FTL")  # FTL file path
         file_path_ftd = os.path.join(output_directory, "fault_tree.FTD")  # FTD file path
         file_path_gtd = os.path.join(output_directory, "fault_tree.GTD")  # FTD file path
-
+        spaces_count = 10  # Number of spaces from the beginning
+        spaces = ' ' * spaces_count
         with open(file_path_ftl, 'a') as file_ftl, open(file_path_ftd, 'a') as file_ftd, open(file_path_gtd,
                                                                                               'a') as file_gtd:
             if correlation == "Yes":
                 # Main seismic fault tree
                 ssc_name = self.event_name
                 seismic_fault_tree_name = f"{ssc_name}-SEIS-FT"
+                file_ftd.write(f"{seismic_fault_tree_name}, SEISMIC FAULURE OF  {self.event_description}  , , , {self.project_name}\n")
+
                 file_ftl.write(f"{self.project_name},  {seismic_fault_tree_name} =\n")
                 ms_lines = [f"{ssc_name}-MS-{ms_bin + 1}-AF-FT                 TRAN" for ms_bin in
                             range(num_mainshock_intervals)]
+
                 file_ftl.write('\n'.join(ms_lines) + '\n')
+                for ms in range(num_mainshock_intervals):
+                    file_ftd.write(f"{ssc_name}-MS-{ms + 1}-AF-FT           ,  AFTERSHOCKS COMMING AFTER MS BIN {ms+1}, S, , {self.project_name}\n")
 
                 file_ftl.write(f"{seismic_fault_tree_name}                      OR  {ssc_name}-MS-FT  {ssc_name}-AS-GT\n")  # 1-CN-TK-1-SEIS-AS-F-GT
 
                 file_ftl.write(f"{ssc_name}-AS-GT                            AND {ssc_name}-AS-F-GT  NOT-{ssc_name}-MS-FT \n")
+                file_gtd.write(f"{ssc_name}-AS-GT           ,AFTERSHOCK FAILURES of {self.event_description}, {self.project_name}\n")
+
                 file_ftl.write(f"{ssc_name}-AS-F-GT                          OR  ")
+                file_gtd.write(f"{ssc_name}-AS-F-GT,            AFTERSHOCK BINS, {self.project_name}\n")
                 for ms_bin in range(num_mainshock_intervals):
                     file_ftl.write(f"{ssc_name}-MS-{ms_bin+1}-AF-FT  ")
                 file_ftl.write("\n")
@@ -153,13 +162,16 @@ class SeismicFaultTree(BaseFaultTree):
                     file_ftl.write(f"{self.project_name},  {ssc_name}-MS-{ms_bin + 1}-AF-FT  = \n")
                     for T in range(int(self.start_time)+int(delta_t),int(self.end_time+int(delta_t)),int(delta_t)):
                         file_ftl.write(f"{ssc_name}-MS-{ms_bin+1}-T-{T}-FT                    TRAN\n")
+                        file_ftd.write(f"{ssc_name}-MS-{ms_bin+1}-T-{T}-FT            , AFTERSHOCKS AFTER MS BIN {ms_bin+1} AFTER {T} HR,     S, , {self.project_name}\n")
                     file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-AF-FT                  AND     HE-MS-{ms_bin+1}  {ssc_name}-MS-{ms_bin+1}-AF-GT1\n")
                     file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-AF-GT1                    OR     ")
+                    file_gtd.write(f"{ssc_name}-MS-{ms_bin + 1}-AF-GT1                 , AFTERSHOCKS TIME DEPENDENCE GATE, {self.project_name}\n")
                     for T in range(int(self.start_time+int(delta_t)),int(self.end_time+int(delta_t)),int(delta_t)):
                         file_ftl.write(f"{ssc_name}-MS-{ms_bin+1}-T-{T}-GT  ")
                     file_ftl.write("\n")
                     for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)), int(delta_t)):
-                        file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT                 AND   HE-T-{T}  {ssc_name}-MS-{ms_bin+1}-T-{T}-FT ")
+                        file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT{spaces}AND   HE-T-{T}  {ssc_name}-MS-{ms_bin+1}-T-{T}-FT ")
+                        file_gtd.write(f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT{spaces}, AFTERSHOCKS TIME {T}, {self.project_name}\n")
 
                         for Time in range(int(self.start_time + int(delta_t)),T,delta_t):
                             file_ftl.write(f"NOT-{ssc_name}-MS-{ms_bin+1}-T-{Time}-AF-GT  ")
@@ -169,6 +181,7 @@ class SeismicFaultTree(BaseFaultTree):
 
                     for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)), int(delta_t)):
                         file_ftl.write(f"NOT-{ssc_name}-MS-{ms_bin+1}-T-{T}-AF-GT             NOR   {ssc_name}-MS-{ms_bin+1}-T-{T}-FT\n")
+                        file_gtd.write(f"NOT-{ssc_name}-MS-{ms_bin+1}-T-{T}-AF-GT          , NO FAILURE AFTER {T} HR AFTER MS BIN {ms_bin+1}, {self.project_name}\n")
 
                     file_ftl.write("^EOS\n")
 
@@ -191,14 +204,22 @@ class SeismicFaultTree(BaseFaultTree):
                     file_ftl.write(f"{self.project_name},  {seismic_fault_tree_name} =\n")
                     ms_lines = [f"{ssc_name}-MS-{ms_bin + 1}-AF-FT                 TRAN" for ms_bin in
                                 range(num_mainshock_intervals)]
+
                     file_ftl.write('\n'.join(ms_lines) + '\n')
+                    for ms in range(num_mainshock_intervals):
+                        file_ftd.write(
+                            f"{ssc_name}-MS-{ms + 1}-AF-FT           ,  AFTERSHOCKS COMMING AFTER MS BIN {ms + 1}, S, , {self.project_name}\n")
 
                     file_ftl.write(
                         f"{seismic_fault_tree_name}                      OR  {ssc_name}-MS-FT  {ssc_name}-AS-GT\n")  # 1-CN-TK-1-SEIS-AS-F-GT
 
                     file_ftl.write(
                         f"{ssc_name}-AS-GT                            AND {ssc_name}-AS-F-GT  NOT-{ssc_name}-MS-FT \n")
+                    file_gtd.write(
+                        f"{ssc_name}-AS-GT           ,AFTERSHOCK FAILURES of {self.event_description}, {self.project_name}\n")
+
                     file_ftl.write(f"{ssc_name}-AS-F-GT                          OR  ")
+                    file_gtd.write(f"{ssc_name}-AS-F-GT,            AFTERSHOCK BINS, {self.project_name}\n")
                     for ms_bin in range(num_mainshock_intervals):
                         file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-AF-FT  ")
                     file_ftl.write("\n")
@@ -212,9 +233,13 @@ class SeismicFaultTree(BaseFaultTree):
                         for T in range(int(self.start_time) + int(delta_t), int(self.end_time + int(delta_t)),
                                        int(delta_t)):
                             file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-FT                    TRAN\n")
+                            file_ftd.write(
+                                f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-FT            , AFTERSHOCKS AFTER MS BIN {ms_bin + 1} AFTER {T} HR,     S, , {self.project_name}\n")
                         file_ftl.write(
                             f"{ssc_name}-MS-{ms_bin + 1}-AF-FT                  AND     HE-MS-{ms_bin + 1}  {ssc_name}-MS-{ms_bin + 1}-AF-GT1\n")
                         file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-AF-GT1                    OR     ")
+                        file_gtd.write(
+                            f"{ssc_name}-MS-{ms_bin + 1}-AF-GT1                 , AFTERSHOCKS TIME DEPENDENCE GATE, {self.project_name}\n")
                         for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)),
                                        int(delta_t)):
                             file_ftl.write(f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT  ")
@@ -222,7 +247,9 @@ class SeismicFaultTree(BaseFaultTree):
                         for T in range(int(self.start_time + int(delta_t)), int(self.end_time + int(delta_t)),
                                        int(delta_t)):
                             file_ftl.write(
-                                f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT                 AND   HE-T-{T}  {ssc_name}-MS-{ms_bin + 1}-T-{T}-FT ")
+                                f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT{spaces}AND   HE-T-{T}  {ssc_name}-MS-{ms_bin + 1}-T-{T}-FT ")
+                            file_gtd.write(
+                                f"{ssc_name}-MS-{ms_bin + 1}-T-{T}-GT{spaces}, AFTERSHOCKS TIME {T}, {self.project_name}\n")
 
                             for Time in range(int(self.start_time + int(delta_t)), T, delta_t):
                                 file_ftl.write(f"NOT-{ssc_name}-MS-{ms_bin + 1}-T-{Time}-AF-GT  ")
@@ -233,6 +260,8 @@ class SeismicFaultTree(BaseFaultTree):
                                        int(delta_t)):
                             file_ftl.write(
                                 f"NOT-{ssc_name}-MS-{ms_bin + 1}-T-{T}-AF-GT             NOR   {ssc_name}-MS-{ms_bin + 1}-T-{T}-FT\n")
+                            file_gtd.write(
+                                f"NOT-{ssc_name}-MS-{ms_bin + 1}-T-{T}-AF-GT          , NO FAILURE AFTER {T} HR AFTER MS BIN {ms_bin + 1}, {self.project_name}\n")
 
                         file_ftl.write("^EOS\n")
 
