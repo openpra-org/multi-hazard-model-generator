@@ -74,36 +74,19 @@ class SeismicFloodingFaultTree:
         for child in node.children:
             self.print_tree(child, level + 1)
 
-# Example JSON data
-json_data = {
-    "name": "FAILURE OF COMPONENT [ssc_name] DUE TO FLOODING",
-    "type": "OR",
-    "id": "OR",
-    "inputs": [
-        {
-            "id": "BE",
-            "type": "HRA",
-            "name": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [SSC_NAME]",
-        },
-        {
-            "id": "OR",
-            "type": "OR",
-            "name": "SOURCES OF SEISMIC INDUCED FLOODING",
-            "inputs": [
-                {
-                    "name": "SEISMIC FAILURE OF COMPONENT [ssc_flood_name] CAUSING FLOODING",
-                    "id": "seismic_FT",
-                },
-                {
-                    "id": "BE",
-                    "type": "RANDOM",
-                    "name": "FAILURE OF COMPONENT [ssc_name] DUE TO RANDOM FLOOD FAILURE",
-                },
-            ],
-        },
-    ],
-}
 
+
+
+
+
+# Construct the path to the JSON input file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+json_filename = "flood_ft.json"
+json_file_path = os.path.join(current_dir, "..", "inputs", json_filename)
+
+# Read the JSON input from the file
+with open(json_file_path, "r") as json_file:
+    json_data = json.load(json_file)
 
 # Create instance of SeismicFloodingFaultTree
 fault_tree = SeismicFloodingFaultTree()
