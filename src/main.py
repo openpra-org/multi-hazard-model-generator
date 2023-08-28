@@ -1,6 +1,6 @@
 from imports import *
 from  seismic_event import  SeismicEvent
-from fault_tree import SeismicFaultTree
+from seismic_fault_tree import SeismicFaultTree
 
 
 # Get the directory path of the current script (main.py)

@@ -1,0 +1,28 @@
+json_data = {
+  "name": "FAILURE OF COMPONENT [ssc_name] DUE TO FLOODING",
+  "type": "OR",
+  "id": "FT",
+  "inputs": [
+      {
+          "id": "BE",
+          "type": "HRA",
+          "name": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [SSC_NAME]",
+      },
+      {
+          "id": "OR_GT",
+          "type": "OR",
+          "name": "SOURCES OF SEISMIC INDUCED FLOODING",
+          "inputs": [
+              {
+                  "name": "SEISMIC FAILURE OF COMPONENT [ssc_flood_name] CAUSING FLOODING",
+                  "id": "seismic_FT",
+              },
+              {
+                  "id": "BE",
+                  "type": "RANDOM",
+                  "name": "FAILURE OF COMPONENT [ssc_name] DUE TO RANDOM FLOOD FAILURE",
+              },
+          ],
+      },
+  ],
+}

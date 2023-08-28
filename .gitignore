@@ -38,4 +38,7 @@ env
 # Setuptools distribution folder.
 dist/
 
+# Log files 
+.log
+
 .coverage
