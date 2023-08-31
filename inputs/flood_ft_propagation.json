@@ -1,0 +1,71 @@
+{
+    "name": "FAILURE OF COMPONENT [ssc_name] DUE TO SEISMIC INDUCED FLOODING",
+    "type": "FT",
+    "logic_type": "AND",
+    "id": "SFL",  // seismic induced flooding
+    "inputs": [
+        {
+            "logic_type": "AND",
+            "id": "SFLMR", // seismic induced flooding in the main room   
+            "type": "GT",
+            "name": "FLOODING INSIDE ROOM  [main_room_num]",
+            "inputs": [ 
+                 {
+                        "name":"SOURCES OF FLOODING INSIDE ROOM [main_room_num]",
+                        "id": "SFLMR", 
+                        "type": "GT", 
+                        "logic_type": "OR", 
+                        "inputs": [
+                            {
+                                "name": "SEISMIC FAILURE OF COMPONENT [ssc_flood_name] CAUSING FLOODING",
+                                "id": "seismic_FT", 
+                                "num": "[num_ssc_flood]"
+
+                            }
+
+                        ]
+
+
+
+                 },
+                 
+                 {
+                    "id": "BE",
+                    "type": "HRA",
+                    "name": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [SSC_NAME]"
+                }
+
+                
+    
+
+
+
+            ]
+        },
+        {
+            "name": "FAILURE OF COMPONENT [ssc_name] DUE TO SEISMIC INDUCED OR RANDOM FLOODING",
+            "type": "OR",
+            "id": "OR",
+            "inputs": [
+                {
+                    "id": "OR",
+                    "type": "GT",
+                    "name": "SOURCES OF SEISMIC INDUCED FLOODING",
+                    "inputs": [
+                        {
+                            "name": "SEISMIC FAILURE OF COMPONENT [ssc_flood_name] CAUSING FLOODING",
+                            "id": "seismic_FT"
+                        }
+                        
+                    ]
+                
+                }, 
+                {
+                    "id": "BE",
+                    "type": "RANDOM",
+                    "name": "FAILURE OF  COMPONENT [ssc_name] DUE TO RANDOM FLOODING"
+                }
+            ]
+        }
+    ]
+}
