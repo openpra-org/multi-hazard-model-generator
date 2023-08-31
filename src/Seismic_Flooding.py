@@ -1,12 +1,14 @@
 from imports import *
 from base_fault import BaseFaultTree
 
+
 class Node:
-    def __init__(self, id, name, type):
-        self.id = id
+    def __init__(self, logic_type, name, node_type):
+        self.logic_type = logic_type
         self.name = name
-        self.type = type
+        self.node_type = node_type
         self.children = []
+
 
 class SeismicFloodingFaultTree:
     def __init__(self):
@@ -16,7 +18,11 @@ class SeismicFloodingFaultTree:
         self.tree = self._build_node(data)
 
     def _build_node(self, node_data):
-        node = Node(node_data.get("id"), node_data.get("name"), node_data.get("type"))
+        logic_type = node_data.get("logic_type")
+        name = node_data.get("name")
+        node_type = node_data.get("type")
+        node = Node(logic_type, name, node_type)
+
         if "inputs" in node_data:
             inputs = node_data["inputs"]
             if isinstance(inputs, dict):
@@ -34,22 +40,22 @@ class SeismicFloodingFaultTree:
         if graph is None:
             graph = pydot.Dot(graph_type="digraph")
 
-        if node.id == "BE":
+        if node.logic_type == "BE":
             node_shape = "octagon"
-            node_width = 0.2  # Adjust the width as needed
-            node_height = 0.2  # Adjust the height as needed
-        elif node.id == "OR":
+            node_width = 0.2
+            node_height = 0.2
+        elif node.logic_type == "OR":
             node_shape = "hexagon"
-            node_width = 1.0  # Adjust the width as needed
-            node_height = 1.0  # Adjust the height as needed
-        elif node.id == "AND":
+            node_width = 1.0
+            node_height = 1.0
+        elif node.logic_type == "AND":
             node_shape = "rectangle"
-            node_width = 1.5  # Adjust the width as needed
-            node_height = 0.75  # Adjust the height as needed
+            node_width = 1.5
+            node_height = 0.75
         else:
             node_shape = "rectangle"
-            node_width = 1.0  # Default width for other nodes
-            node_height = 0.5  # Default height for other nodes
+            node_width = 1.0
+            node_height = 0.5
 
         graph.add_node(pydot.Node(node.name, label=node.name, shape=node_shape, width=node_width, height=node_height))
 
@@ -61,16 +67,13 @@ class SeismicFloodingFaultTree:
     def visualize_tree(self):
         graph = self.create_graph()
         graph.write_png("seismic_flooding_fault_tree.png")
-
-        # Display the image using PIL (Python Imaging Library)
         img = Image.open("seismic_flooding_fault_tree.png")
         img.show()
-
 
     def print_tree(self, node=None, level=0):
         if node is None:
             node = self.tree
-        print("  " * level + f"ID: {node.id}, Name: {node.name}, Type: {node.type}")
+        print("  " * level + f"Logic Type: {node.logic_type}, Name: {node.name}, Type: {node.node_type}")
         for child in node.children:
             self.print_tree(child, level + 1)
 
@@ -81,7 +84,7 @@ class SeismicFloodingFaultTree:
 
 # Construct the path to the JSON input file
 current_dir = os.path.dirname(os.path.abspath(__file__))
-json_filename = "flood_ft.json"
+json_filename = "flood_ft_propagation.json"
 json_file_path = os.path.join(current_dir, "..", "inputs", json_filename)
 
 # Read the JSON input from the file

@@ -2,70 +2,115 @@
     "name": "FAILURE OF COMPONENT [ssc_name] DUE TO SEISMIC INDUCED FLOODING",
     "type": "FT",
     "logic_type": "AND",
-    "id": "SFL",  // seismic induced flooding
+    "id": "SFL",  
     "inputs": [
-        {
-            "logic_type": "AND",
-            "id": "SFLMR", // seismic induced flooding in the main room   
-            "type": "GT",
-            "name": "FLOODING INSIDE ROOM  [main_room_num]",
-            "inputs": [ 
-                 {
-                        "name":"SOURCES OF FLOODING INSIDE ROOM [main_room_num]",
-                        "id": "SFLMR", 
-                        "type": "GT", 
-                        "logic_type": "OR", 
-                        "inputs": [
-                            {
-                                "name": "SEISMIC FAILURE OF COMPONENT [ssc_flood_name] CAUSING FLOODING",
-                                "id": "seismic_FT", 
-                                "num": "[num_ssc_flood]"
-
-                            }
-
-                        ]
-
-
-
-                 },
-                 
-                 {
-                    "id": "BE",
-                    "type": "HRA",
-                    "name": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [SSC_NAME]"
-                }
-
-                
-    
-
-
-
-            ]
-        },
-        {
-            "name": "FAILURE OF COMPONENT [ssc_name] DUE TO SEISMIC INDUCED OR RANDOM FLOODING",
-            "type": "OR",
-            "id": "OR",
+      {
+        "logic_type": "AND",
+        "id": "SFLMR", 
+        "type": "GT",
+        "name": "FLOODING INSIDE ROOM  [main_room_num]",
+        "inputs": [
+          {
+            "name": "SOURCES OF FLOODING INSIDE ROOM [main_room_num]",
+            "id": "SFLMR",  
+            "type": "GT",  
+            "logic_type": "OR",
             "inputs": [
-                {
-                    "id": "OR",
-                    "type": "GT",
-                    "name": "SOURCES OF SEISMIC INDUCED FLOODING",
-                    "inputs": [
-                        {
-                            "name": "SEISMIC FAILURE OF COMPONENT [ssc_flood_name] CAUSING FLOODING",
-                            "id": "seismic_FT"
-                        }
-                        
-                    ]
-                
-                }, 
-                {
-                    "id": "BE",
-                    "type": "RANDOM",
-                    "name": "FAILURE OF  COMPONENT [ssc_name] DUE TO RANDOM FLOODING"
-                }
+              {
+                "name": "SEISMIC FAILURE OF  [ssc_flood_name] CAUSING FLOODING",
+                "id": "seismic_FT",
+                "num": "[num_ssc_flood]"
+              },
+              {
+                "logic_type": "BE",
+                "type": "HRA",
+                "name": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [SSC_NAME]"
+              }
             ]
-        }
+          }
+        ]
+      },
+      {
+        "name": "FLOODING IN OTHER ROOMS PROPAGATING TO ROOM [main_room_num]",
+        "id": "SFLOR",
+        "type": "GT",
+        "logic_type": "OR",
+        "inputs": [
+          {
+            "name": "FLOODING PROPAGATING FROM ROOM [diff_room_num] TO ROOM [main_room_num]",
+            "id": "SFLOR",
+            "type": "GT",
+            "num": "[tot_room_num]",
+            "logic_type": "AND",
+            "inputs": [
+              {
+                "name": "SOURCES OF FLOODING INSIDE ROOM [diff_room_num]",
+                "id": "SFLOR",
+                "type": "GT",
+                "logic_type": "AND",
+                "inputs": [
+                  {
+                    "name": "SEISMIC FAILURE OF [ssc_flood_name]",
+                    "id": "SFLOR",
+                    "type": "seismic_FT",
+                    "num_ssc_flood": "[num]"
+                  },
+                  {
+                    "logic_type": "BE",
+                    "type": "HRA",
+                    "name": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [ssc_flood_name]"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "BARRIERS COLLAPSE",
+            "id": "SFLOR",
+            "type": "GT",
+            "logic_type": "AND",
+            "inputs": [
+              {
+                "name": "BARRIERS OF ROOM [main_room_num]",
+                "id": "SFLMR",
+                "type": "GT",
+                "logic_type": "OR",
+                "inputs": [
+                  {
+                    "name": "SEISMIC FAILURE OF [barrier_main]",
+                    "logic_type": "OR",
+                    "id": "barrier_mr",
+                    "type": "seismic_FT"
+                  },
+                  {
+                    "logic_type": "BE",
+                    "type": "pressure",
+                    "name": "COLLAPSE OF WATER BARRIER IN ROOM [main_room_num] DUE TO PRESSURE"
+                    
+                  }
+                ]
+              },
+              {
+                "name": "BARRIERS OF ROOM [diff_room_num]",
+                "id": "SFLOR",
+                "type": "GT",
+                "logic_type": "OR",
+                "inputs": [
+                  {
+                    "name": "SEISMIC FAILURE OF [barrier_other]",
+                    "logic_type": "OR",
+                    "type": "seismic_FT"
+                  },
+                  {
+                    "logic_type": "BE",
+                    "type": "pressure",
+                    "name": "COLLAPSE OF WATER BARRIER IN ROOM [diff_room_num] DUE TO PRESSURE"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     ]
-}
+  }
