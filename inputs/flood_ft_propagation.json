@@ -1,110 +1,129 @@
 {
-    "name": "FAILURE OF COMPONENT [ssc_name] DUE TO SEISMIC INDUCED FLOODING",
+    "description": "FAILURE OF COMPONENT [ssc_name] DUE TO SEISMIC INDUCED FLOODING",
+    "name": "[ssc_name]-SIF-FT", 
     "type": "FT",
     "logic_type": "AND",
-    "id": "SFL",  
+    "id": "SFL",
     "inputs": [
       {
         "logic_type": "AND",
         "id": "SFLMR", 
         "type": "GT",
-        "name": "FLOODING INSIDE ROOM  [main_room_num]",
+        "description": "FLOODING INSIDE ROOM  [main_room_num]",
+        "name": "SIF-R-[main_room_num]-GT", 
         "inputs": [
           {
-            "name": "SOURCES OF FLOODING INSIDE ROOM [main_room_num]",
+            "description": "SOURCES OF FLOODING INSIDE ROOM [main_room_num]",
+            "name": "SIF-SRC-R-[main_room_num]-GT",
             "id": "SFLMR",  
             "type": "GT",  
             "logic_type": "OR",
             "inputs": [
               {
-                "name": "SEISMIC FAILURE OF  [ssc_flood_name] CAUSING FLOODING",
+                "name": "[ssc_flood_name]-SEIS-FT",
+                "description": "SEISMIC FAILURE OF  [ssc_flood_name] CAUSING FLOODING",
                 "id": "seismic_FT",
                 "num": "[num_ssc_flood]"
-              },
-              {
-                "logic_type": "BE",
-                "type": "HRA",
-                "name": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [SSC_NAME]"
               }
+              
             ]
+          }, 
+          {
+            "logic_type": "BE",
+            "name" : "[num_ssc_flood]-HRA", 
+            "type": "HRA",
+            "description": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [num_ssc_flood]"
           }
+        
         ]
       },
       {
-        "name": "FLOODING IN OTHER ROOMS PROPAGATING TO ROOM [main_room_num]",
+        "description": "FLOODING IN OTHER ROOMS PROPAGATING TO ROOM [main_room_num]",
+        "name": "SIF-R-[diff_room_num]-GT", 
         "id": "SFLOR",
         "type": "GT",
         "logic_type": "OR",
         "inputs": [
           {
-            "name": "FLOODING PROPAGATING FROM ROOM [diff_room_num] TO ROOM [main_room_num]",
+            "description": "FLOODING PROPAGATING FROM ROOM [diff_room_num] TO ROOM [main_room_num]",
+            "name": "SIF-R-[diff_room_num]-PRG-GT", 
             "id": "SFLOR",
             "type": "GT",
             "num": "[tot_room_num]",
             "logic_type": "AND",
             "inputs": [
               {
-                "name": "SOURCES OF FLOODING INSIDE ROOM [diff_room_num]",
+                "description": "SOURCES OF FLOODING INSIDE ROOM [diff_room_num]",
+                "name" : "SIF-SRC-R-[diff_room_num]-GT", 
                 "id": "SFLOR",
                 "type": "GT",
                 "logic_type": "AND",
                 "inputs": [
                   {
-                    "name": "SEISMIC FAILURE OF [ssc_flood_name]",
+                    "description": "SEISMIC FAILURE OF [ssc_flood_name]",
+                    "name": "[ssc_flood_name]-SEIS-FT",
                     "id": "SFLOR",
                     "type": "seismic_FT",
                     "num_ssc_flood": "[num]"
                   },
                   {
                     "logic_type": "BE",
+                    "name" : "[num_ssc_flood]-HRA", 
                     "type": "HRA",
-                    "name": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [ssc_flood_name]"
+                    "description": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [ssc_flood_name]"
                   }
                 ]
               }
             ]
           },
           {
-            "name": "BARRIERS COLLAPSE",
+            "description": "BARRIERS COLLAPSE",
+            "name": "BARR-COLL-[ssc_name]-GT", 
             "id": "SFLOR",
             "type": "GT",
             "logic_type": "AND",
             "inputs": [
               {
-                "name": "BARRIERS OF ROOM [main_room_num]",
+                "description": "BARRIERS OF ROOM [main_room_num]",
+                "name": "BARR-COLL-R-[main_room_num]-[ssc_name]-GT", 
                 "id": "SFLMR",
                 "type": "GT",
                 "logic_type": "OR",
                 "inputs": [
                   {
-                    "name": "SEISMIC FAILURE OF [barrier_main]",
+                    "description": "SEISMIC FAILURE OF [barrier_main]",
+                    "name": "[barrier_mr]-SEIS-FT", 
                     "logic_type": "OR",
                     "id": "barrier_mr",
                     "type": "seismic_FT"
                   },
                   {
                     "logic_type": "BE",
+                    "name": "[barrier_mr]-PRS-BE", 
                     "type": "pressure",
-                    "name": "COLLAPSE OF WATER BARRIER IN ROOM [main_room_num] DUE TO PRESSURE"
+                    "description": "COLLAPSE OF WATER BARRIER IN ROOM [main_room_num] DUE TO PRESSURE"
                     
                   }
                 ]
               },
               {
-                "name": "BARRIERS OF ROOM [diff_room_num]",
+                "description": "BARRIERS OF ROOM [diff_room_num]",
+                "name": "BARR-COLL-R-[diff_room_num]-[ssc_name]-GT", 
                 "id": "SFLOR",
                 "type": "GT",
                 "logic_type": "OR",
                 "inputs": [
                   {
-                    "name": "SEISMIC FAILURE OF [barrier_other]",
+                    "description": "SEISMIC FAILURE OF [barrier_other]",
+                    "name": "[barrier_or]-SEIS-FT", 
                     "logic_type": "OR",
                     "type": "seismic_FT"
                   },
                   {
                     "logic_type": "BE",
+                    "name": "[barrier_mr]-PRS-BE", 
                     "type": "pressure",
-                    "name": "COLLAPSE OF WATER BARRIER IN ROOM [diff_room_num] DUE TO PRESSURE"
+                    "description": "COLLAPSE OF WATER BARRIER IN ROOM [diff_room_num] DUE TO PRESSURE"
                   }
                 ]
               }
