@@ -23,7 +23,8 @@
                 "name": "[ssc_flood_name]-SEIS-FT",
                 "description": "SEISMIC FAILURE OF  [ssc_flood_name] CAUSING FLOODING",
                 "id": "seismic_FT",
-                "num": "[num_ssc_flood]"
+                "num": "[num_ssc_flood]",
+                "logic_type": "OR"
               }
               
             ]
@@ -64,7 +65,8 @@
                     "name": "[ssc_flood_name]-SEIS-FT",
                     "id": "SFLOR",
                     "type": "seismic_FT",
-                    "num_ssc_flood": "[num]"
+                    "num_ssc_flood": "[num]",
+                    "logic_type": "OR"
                   },
                   {
                     "logic_type": "BE",

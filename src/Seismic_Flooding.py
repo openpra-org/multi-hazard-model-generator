@@ -74,8 +74,10 @@ class SeismicFloodingFaultTree:
 
     def print_tree(self, node=None, level=0):
         if node is None:
-            node = self.tree
+            return  # Exit the function if the node is None
+
         print("  " * level + f"Logic Type: {node.logic_type}, Description: {node.description}, Type: {node.node_type}")
+
         for child in node.children:
             self.print_tree(child, level + 1)
 
@@ -87,7 +89,7 @@ class SeismicFloodingFaultTree:
         # Construct output directory
         output_dir = os.path.join(current_dir, "..", "output", "general")
 
-        # Create directory if doesn't exist
+        # Create directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
 
         # Build full file path
@@ -147,11 +149,11 @@ with open(json_file_path, "r") as json_file:
 # Create instance of SeismicFloodingFaultTree
 fault_tree = SeismicFloodingFaultTree()
 
-# Build the tree
-fault_tree.build_tree(json_data)
 
 # Print the tree hierarchy with node information
 fault_tree.print_tree()
+# Build the tree
+fault_tree.build_tree(json_data)
 
 # Visualize the tree
 fault_tree.visualize_tree()
