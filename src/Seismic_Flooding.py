@@ -1,5 +1,4 @@
 from imports import *
-from base_fault import BaseFaultTree
 
 
 class Node:
@@ -137,6 +136,32 @@ class SeismicFloodingFaultTree:
 
 
 
+
+# Custom JSON Encoder to handle ObjectId
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)  # Convert ObjectId to its string representation
+        return super(JSONEncoder, self).default(o)
+
+
+
+
+# Create a MongoDB client
+client = MongoClient('mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/')
+
+# Use a database
+db = client['seismic_flooding_database']
+
+components = db["components"]
+flood_barriers = db["flood_barriers"]
+flooding_propagation = db["flooding_propagation"]
+flooding_sources = db["flooding_sources"]
+rooms = db["rooms"]
+Flooding_HRA = db["Flooding_HRA"]
+
+
+
 # Construct the path to the JSON input file
 current_dir = os.path.dirname(os.path.abspath(__file__))
 json_filename = "flood_ft_propagation.json"
@@ -164,5 +189,3 @@ gtd_file = 'seismic_induced_flooding.GTD'
 ftl_file = 'seismic_induced_flooding.FTL'
 fault_tree.write_gtd(gtd_file)
 fault_tree.write_ftl(ftl_file)
-
-                    
