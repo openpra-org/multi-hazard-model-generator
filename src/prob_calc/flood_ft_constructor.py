@@ -43,9 +43,8 @@ class SeismicFloodingFaultTree:
             if self.flood_HRA:
                 hra_document = self.flood_HRA.find_one({"room_id": room_id})
                 if hra_document:
-                    modified_gate.update_one(
-                        {"id": "SFR"},  # Filter to find the document with "id": "SFR"
-                        {"$push": {"inputs": hra_document}})
+                    # Append the HRA document to the "inputs" array
+                    modified_gate["inputs"].append(hra_document)
 
             # Now, modified_gate contains the gate document with placeholders replaced
             print(modified_gate)
