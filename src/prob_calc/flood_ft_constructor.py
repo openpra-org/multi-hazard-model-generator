@@ -1,5 +1,6 @@
 from pymongo import MongoClient
-
+import json
+from bson import json_util
 class SeismicFloodingFaultTree:
     def __init__(self, mongodb_uri, db_name):
         self.client = MongoClient(mongodb_uri)
@@ -47,20 +48,59 @@ class SeismicFloodingFaultTree:
                     modified_gate["inputs"].append(hra_document)
 
             # Now, modified_gate contains the gate document with placeholders replaced
-            print(modified_gate)
 
+
+def insert_inputs_for_sofr(doc):
+    # Recursively traverse doc
+    def insert(obj):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if k == 'id' and v == 'SOFR':
+                    # Insert inputs for SOFR
+                    obj['inputs'] = []
+                else:
+                    # Recurse through values
+                    insert(v)
+
+    insert(doc)
+
+    return doc
 # Usage example
 def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/'
     db_name = 'seismic_flooding_database'
+    client = MongoClient(mongodb_uri)
+    db = client[db_name]
+    flooding_gate_temp = db["flooding_gate_temp"]
 
     tree = SeismicFloodingFaultTree(mongodb_uri, db_name)
+
     tree.flood_room_gate()
+
+    docs=insert_inputs_for_sofr(flooding_gate_temp)
+
+    json_doc = json.dumps(doc, default=json_util.default)
+    print()
 
 if __name__ == "__main__":
     main()
 
 
+def insert_inputs_for_sofr(doc):
+    # Recursively traverse doc
+    def insert(obj):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if k == 'id' and v == 'SOFR':
+                    # Insert inputs for SOFR
+                    obj['inputs'] = []
+                else:
+                    # Recurse through values
+                    insert(v)
+
+    insert(doc)
+
+    return doc
 
 
 

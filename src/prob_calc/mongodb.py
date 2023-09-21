@@ -1,6 +1,7 @@
 from bson import json_util, ObjectId
 from pymongo import MongoClient
 import json
+import copy
 
 class SeismicFloodingFaultTree:
     def __init__(self, mongodb_uri, db_name):
@@ -32,11 +33,12 @@ class SeismicFloodingFaultTree:
 
             # Replace placeholders in the JSON object
             self.replace_placeholders(template_flood_room_gate_json, room_id, room_name)
-            self.scan_json_for_id(template_flood_room_gate_json, room_id)
-            # Now, template_flood_room_gate_json contains the gate document with placeholders replaced
-           #print(json.dumps(template_flood_room_gate_json, indent=4))
+            self.update_hra_events(template_flood_room_gate_json, room_id)
+            self.update_sources_of_flooding(template_flood_room_gate_json, self.sources_collection, room_id)
 
-    def scan_json_for_id(self, json_obj, room_id, parent=None, parent_key=None):
+            gate_json_representation = self.remove_object_ids(template_flood_room_gate_json)
+            print(gate_json_representation)
+    def update_hra_events(self, json_obj, room_id, parent=None, parent_key=None):
         for index, input in enumerate(json_obj['inputs']):
             #print(input
             new_input = input
@@ -45,23 +47,34 @@ class SeismicFloodingFaultTree:
                 new_input['room_id'] = room_id
                 json_obj['inputs'][index] = new_input
 
-            #json_obj['input'] = new_input
 
-        print(json_obj)
-        return json_obj
+
         for key, value in json_obj.items():
             if key == "id" and value == "Flood_HRA":
                 # Look for the HRA document with the matching room_id
                 hra_document = self.flooding_HRA_collection.find_one({"room_id": ObjectId(room_id)})
                 json_obj[key] = hra_document
-
         return json_obj
 
+    def update_sources_of_flooding(self, json_obj, sources_collection, room_id):
+        # Fetch SOFR documents from the MongoDB collection
+        sofr_documents = list(sources_collection.find({"room_id": ObjectId(room_id)}))
 
+        # Find dictionaries within SFR_doc that contain "id": "SOFR" and update them
+        if "inputs" in json_obj:
+            for input_obj in json_obj["inputs"]:
+                if input_obj.get("id") == "SOFR":
+                    # Assuming input_obj is your JSON document
+                    if "inputs" not in input_obj:
+                        input_obj["inputs"] = []
 
+                    # Append SOFR documents from the fetched list
+                    input_obj["inputs"].extend(sofr_documents)
 
+        # Print the updated SFR_doc
 
-        return  hra_document
+        # Return the updated SFR_doc if needed
+        return json_obj
 
     def find_key_value_with_path(self,json_obj, target_key, target_value, path=None):
         if path is None:
@@ -99,6 +112,25 @@ class SeismicFloodingFaultTree:
         elif isinstance(json_obj, list):
             for item in json_obj:
                 self.replace_placeholders(item, room_id, room_name)
+
+    def remove_object_ids(self, obj):
+        if isinstance(obj, dict):
+            # If it's a dictionary, iterate through its keys and values
+            for key, value in obj.items():
+                # Recursively process each value
+                obj[key] = self.remove_object_ids(value)
+        elif isinstance(obj, list):
+            # If it's a list, iterate through its elements
+            for i, item in enumerate(obj):
+                # Recursively process each item
+                obj[i] = self.remove_object_ids(item)
+        elif isinstance(obj, ObjectId):
+            # If it's an ObjectId, convert it to a string
+            return str(obj)
+
+        return obj
+
+
 def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/'
     db_name = 'seismic_flooding_database'
