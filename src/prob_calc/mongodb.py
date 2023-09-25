@@ -51,9 +51,17 @@ class SeismicFloodingFaultTree:
         return representation
 
 
-    def propagation_gate(self):
-        # Retrieve the template gate document (assuming it's the only one)
-        template_flood_propagation_gate = self.flooding_propagation_temp.find_one({})
+    def propagation_to_room(self):
+        # Retrieve the propagation to  room gate document
+        template_flood_propagation_to_room_gate = self.flooding_propagation_temp.find_one({"id": "SFP-MR"})
+        if template_flood_propagation_to_room_gate is None:
+            raise Exception("Template flooding propagation from room gate not found.")
+
+
+
+    def propagation_from_one_room_gate(self):
+        # Retrieve the propagation from one room gate document
+        template_flood_propagation_gate = self.flooding_propagation_temp.find_one({"id": "SFP"})
         if template_flood_propagation_gate is None:
             raise Exception("Template flooding propagation gate not found.")
 
@@ -93,15 +101,16 @@ class SeismicFloodingFaultTree:
 
     def add_flood_barrier_collapse(self, json_obj, room_id):
         for index, input in enumerate(json_obj['inputs']):
+            new_input = input
             # Check if the input has 'id' equal to 'CFB'
             if 'id' in input and input['id'] == 'CFB':
                 # Try to find the flood barrier document
-                barrier_doc = self.flood_barriers_collection.find_one({"room_id": ObjectId(room_id)},
+                new_input = self.flood_barriers_collection.find_one({"room_id": ObjectId(room_id)},
                                                                       {'room_id': 0, '_id': 0})
-                if barrier_doc:
+                if new_input:
                     # If the document exists, update the 'room_id' field
-                    input['room_id'] = room_id
-                    json_obj['inputs'][index] = input
+                    new_input['room_id'] = room_id
+                    json_obj['inputs'][index] = new_input
                 else:
                     warnings.warn(f"Flood barrier document not found for room_id: {room_id}", UserWarning)
 
@@ -215,6 +224,6 @@ def main():
     # Usage example
     tree = SeismicFloodingFaultTree(mongodb_uri, db_name)
     tree.flood_room_gate()  # This method doesn't return anything, so no need to pass it to scan_json_for_id
-    tree.propagation_gate()
+    tree.propagation_from_one_room_gate()
 if __name__ == "__main__":
     main()
