@@ -9,6 +9,7 @@ class SeismicFloodingFaultTree:
     def __init__(self, mongodb_uri, db_name):
         self.client = MongoClient(mongodb_uri)
         self.db = self.client[db_name]
+        self.ssc_seismic_flood = self.db["components"]
         self.sources_collection = self.db["flood_sources"]
         self.rooms_collection = self.db["rooms"]
         self.barriers_collection = self.db["flood_barriers"]
@@ -16,9 +17,35 @@ class SeismicFloodingFaultTree:
         self.flooding_HRA_collection = self.db["Flooding_HRA"]
         self.flood_room_gate_representations = {} # Dictionary to store flood room gate_json_representation by room_id
         self.propagation_from_one_room_representation = {} # Dictionary to store flood propagation from one room gate_json_representation by room_id
+        self.flood_propagation_to_room_representation = {}   #  Dictionary to store flood propagation to one room gate_json by room_id
         self.flooding_propagation_temp =self.db["propagation_gate_temp"]
         self.flood_barriers_collection = self.db["flood_barriers"]
         self.flooding_propagation_events = self.db["flooding_propagation"]
+
+
+
+
+    def ssc_fault_tree(self):
+        # Iterate over documents in the self.ssc_seismic_flood collection
+        cursor = self.ssc_seismic_flood.find({})
+
+        for ssc_document in cursor:
+            # Extract the room_id from the document
+            room_id = str(ssc_document.get("room_id"))
+
+            self.add_flood_propagation_gate_ssc(ssc_document,room_id)
+
+
+
+
+
+    def add_flood_propagation_gate_ssc(self,json_obj,room_id):
+
+        flood_inside_room_gate=self.get_flood_gate_by_room_id(room_id)
+        flood_propagate_to_room_gate= self.get_flood_propagation_to_room_gate_by_room_id(room_id)
+        print(flood_propagate_to_room_gate)
+
+
     def flood_room_gate(self):
         # Retrieve the template gate document (assuming it's the only one)
         template_flood_room_gate = self.flooding_gate_temp.find_one({})
@@ -57,9 +84,17 @@ class SeismicFloodingFaultTree:
         representation = self.propagation_from_one_room_representation.get(room_id)
         return representation
 
+
+    def get_flood_propagation_to_room_gate_by_room_id(self,room_id):
+
+        # Retrieve the flood to room gate_json_representation using room_id
+        representation = self.flood_propagation_to_room_representation.get(room_id)
+        return representation
+
+
     def propagation_to_room(self):
 
-        flood_propagation_to_room_dict = {}
+
 
         # Retrieve the propagation to room gate document
         template_flood_propagation_to_room_gate = self.flooding_propagation_temp.find_one({"id": "SFP-MR"})
@@ -86,8 +121,7 @@ class SeismicFloodingFaultTree:
                 # Add flood propagation gate using the copy of the template
                 self.add_flood_propagation_gate(template_copy, source_room_id)
             self.remove_object_ids(template_copy)
-            flood_propagation_to_room_dict[room_id] = template_copy
-            print(template_copy)
+            self.flood_propagation_to_room_representation[room_id] = template_copy
 
     def add_flood_propagation_gate(self, json_obj, room_id):
         # Check if 'inputs' key exists in json_obj, if not, create it as an empty list
@@ -129,7 +163,7 @@ class SeismicFloodingFaultTree:
             # Add sources of flooding gate in the JSON object
             self.add_seismic_flooding_room(template_flood_propagation_gate_json,room_id)
             # Add flood barrier collapse gate
-            self.add_flood_barrier_collapse(template_flood_propagation_gate_json,room_id)
+            self.add_flood_barrier_collapse(template_flood_propagation_gate_json,room_id,room_name)
             # Store the gate_json_representation in the dictionary with room_id as the key
             self.propagation_from_one_room_representation[room_id] = template_flood_propagation_gate_json
 
@@ -149,7 +183,7 @@ class SeismicFloodingFaultTree:
         return json_obj
 
 
-    def add_flood_barrier_collapse(self, json_obj, room_id):
+    def add_flood_barrier_collapse(self, json_obj, room_id,room_num):
         for index, input in enumerate(json_obj['inputs']):
             new_input = input
             # Check if the input has 'id' equal to 'CFB'
@@ -172,7 +206,7 @@ class SeismicFloodingFaultTree:
                     json_obj[key] = barrier_doc
                 else:
                     warnings.warn(f"Flood barrier document not found for room_id: {room_id}", UserWarning)
-
+        self.replace_placeholders(json_obj,room_id,room_num)
         return json_obj
 
     def add_hra_events(self, json_obj, room_id, parent=None, parent_key=None):
@@ -291,5 +325,6 @@ def main():
     tree.flood_room_gate()  # This method doesn't return anything, so no need to pass it to scan_json_for_id
     tree.propagation_from_one_room_gate()
     tree.propagation_to_room()
+    tree.ssc_fault_tree()
 if __name__ == "__main__":
     main()
