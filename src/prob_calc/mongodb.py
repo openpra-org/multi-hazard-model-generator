@@ -21,29 +21,152 @@ class SeismicFloodingFaultTree:
         self.flooding_propagation_temp =self.db["propagation_gate_temp"]
         self.flood_barriers_collection = self.db["flood_barriers"]
         self.flooding_propagation_events = self.db["flooding_propagation"]
+        self.ssc_fault_tree_template =  self.db["ssc_ft_temp"]
 
+        self.source_room_ids_dict = {}   # Dictionary to store source room ids with target room as key
+        self.combination_of_flood_inside_propagation_dict = {}
 
 
 
     def ssc_fault_tree(self):
         # Iterate over documents in the self.ssc_seismic_flood collection
         cursor = self.ssc_seismic_flood.find({})
+        ssc_fault_tree = json.loads(json_util.dumps(self.ssc_fault_tree_template.find_one()))
+
+        # Flood occurs inside or migrate to room gate template
+
+        flood_in_or_to_room_gate = self.ssc_fault_tree_template.find_one({"id": "SF-RP"})
+
+
+
 
         for ssc_document in cursor:
+
+
+
             # Extract the room_id from the document
+            ssc_fault_tree_copy = copy.deepcopy(ssc_fault_tree)
+
             room_id = str(ssc_document.get("room_id"))
 
-            self.add_flood_propagation_gate_ssc(ssc_document,room_id)
+
+            # Check if the room_id exists in the rooms_collection
+            room_info = self.rooms_collection.find_one({"_id": ObjectId(room_id)})
+            room_num = room_info.get("name") if room_info else None
+
+            # Building flood_in_or_to_room gate
+            flood_in_or_to_room_gate_copy = copy.deepcopy(flood_in_or_to_room_gate)
+
+            self.build_combine_flood_inside_propagate(flood_in_or_to_room_gate_copy,room_id,room_num)
+
+            self.replace_placeholders(ssc_fault_tree_copy,room_id,room_num,ssc_document.get("name"),ssc_document.get("description"))
+            self.add_ssc_failure_event(room_id,ssc_fault_tree_copy,ssc_document)
+            self.add_combined_flood_inside_propagate_to_ssc_ft(ssc_fault_tree_copy,flood_in_or_to_room_gate_copy)
+            self.remove_object_ids(ssc_fault_tree_copy)
+            print(ssc_fault_tree_copy)
+
+
+    def add_combined_flood_inside_propagate_to_ssc_ft(self,ssc_ft,combined_doc):
+        for index, input in enumerate(ssc_ft['inputs']):
+            new_input = input
+            if 'id' in input and input['id'] == 'SF-RP':
+                new_input = combined_doc
+                ssc_ft['inputs'][index] = new_input
+
+        return ssc_ft
+
+
+    def build_combine_flood_inside_propagate(self,json_obj,room_id,room_num):
+
+        self.add_flood_inside_room_gate(json_obj, room_id)
+        self.add_flood_migrate_to_room_gate(json_obj, room_id)
+        self.replace_placeholders(json_obj, room_id, room_num)
+
+        self.combination_of_flood_inside_propagation_dict[room_id] = json_obj
+
+        return json_obj
+
+    def add_flood_inside_room_gate(self,json_obj,room_id):
+
+        # Check if 'inputs' key exists in json_obj, if not, create it as an empty list
+        if 'inputs' not in json_obj:
+            json_obj['inputs'] = []
+
+        # Create a new input document to add to the 'inputs' list
+        new_input = {}
+
+        # Check if the input has 'id' equal to 'SFP-MR0'
+        if 'id' in json_obj and json_obj['id'] == 'SF-RP':
+            # Try to find the flood propagation gate document
+            flood_inside_room = self.flood_room_gate_representations.get(room_id)
+            if flood_inside_room:
+                # If the document exists, update the 'room_id' field
+                flood_inside_room['room_id'] = room_id
+                # Append the updated document to the 'inputs' list
+                json_obj['inputs'].append(flood_inside_room)
+            else:
+                warnings.warn(f"Flood propagation gate document not found for room_id: {room_id}", UserWarning)
+
+
+    def add_flood_migrate_to_room_gate(self,json_obj,room_id):
+
+        # Check if 'inputs' key exists in json_obj, if not, create it as an empty list
+        if 'inputs' not in json_obj:
+            json_obj['inputs'] = []
+
+        # Create a new input document to add to the 'inputs' list
+        new_input = {}
+
+        # Check if the input has 'id' equal to 'SFP-MR0'
+        if 'id' in json_obj and json_obj['id'] == 'SF-RP':
+            # Try to find the flood propagation gate document
+            flood_migrate_to_room = self.flood_propagation_to_room_representation.get(room_id)
+            if flood_migrate_to_room:
+                # If the document exists, update the 'room_id' field
+                flood_migrate_to_room['room_id'] = room_id
+                # Append the updated document to the 'inputs' list
+                json_obj['inputs'].append(flood_migrate_to_room)
+            else:
+                warnings.warn(f"Flood propagation gate document not found for room_id: {room_id}", UserWarning)
+
+    def add_ssc_failure_event(self,room_id,json_obj,ssc_document):
+
+        for index, input in enumerate(json_obj['inputs']):
+            # print(input
+            new_input = input
+            if 'id' in input and input['id'] == 'SSC-FF':
+                new_input = ssc_document
+                new_input['room_id'] = room_id
+                json_obj['inputs'][index] = new_input
+
+        return json_obj
+
+
+
+    def add_flood_in_or_to_room_gate(self,json_obj,room_id):
+
+        # Check if 'inputs' key exists in json_obj, if not, create it as an empty list
+        if 'inputs' not in json_obj:
+            json_obj['inputs'] = []
+
+        # Create a new input document to add to the 'inputs' list
+        new_input = {}
+
+        # Check if the input has 'id' equal to 'SFP-MR0'
+        if 'id' in json_obj and json_obj['id'] == 'SF-RP':
+            # Try to find the flood propagation gate document
+            flood_inside_room = self.flood_room_gate_representations.get(room_id)
+            if flood_inside_room:
+                # If the document exists, update the 'room_id' field
+                flood_inside_room['room_id'] = room_id
+                # Append the updated document to the 'inputs' list
+                json_obj['inputs'].append(flood_inside_room)
+            else:
+                warnings.warn(f"Flood propagation gate document not found for room_id: {room_id}", UserWarning)
 
 
 
 
-
-    def add_flood_propagation_gate_ssc(self,json_obj,room_id):
-
-        flood_inside_room_gate=self.get_flood_gate_by_room_id(room_id)
-        flood_propagate_to_room_gate= self.get_flood_propagation_to_room_gate_by_room_id(room_id)
-        print(flood_propagate_to_room_gate)
 
 
     def flood_room_gate(self):
@@ -94,8 +217,6 @@ class SeismicFloodingFaultTree:
 
     def propagation_to_room(self):
 
-
-
         # Retrieve the propagation to room gate document
         template_flood_propagation_to_room_gate = self.flooding_propagation_temp.find_one({"id": "SFP-MR"})
         if template_flood_propagation_to_room_gate is None:
@@ -116,12 +237,16 @@ class SeismicFloodingFaultTree:
             self.replace_placeholders(template_copy, room_id, room_name)
 
             source_room_ids = self.get_propagation_events_by_target_room_id(room_id)
+            self.source_room_ids_dict[room_id] = source_room_ids
+
 
             for source_room_id in source_room_ids:
+
                 # Add flood propagation gate using the copy of the template
                 self.add_flood_propagation_gate(template_copy, source_room_id)
             self.remove_object_ids(template_copy)
             self.flood_propagation_to_room_representation[room_id] = template_copy
+
 
     def add_flood_propagation_gate(self, json_obj, room_id):
         # Check if 'inputs' key exists in json_obj, if not, create it as an empty list
@@ -271,17 +396,22 @@ class SeismicFloodingFaultTree:
 
         return found_items
 
-    def replace_placeholders(self, json_obj, room_id, room_name):
+    def replace_placeholders(self, json_obj, room_id, room_name, ssc_name=None, ssc_description=None):
         if isinstance(json_obj, dict):
             for key, value in json_obj.items():
                 if isinstance(value, str):
                     # Replace placeholders with correct values
-                    json_obj[key] = value.replace("[room_id]", str(room_id)).replace("[room_num]", room_name)
+                    if ssc_name is not None:
+                        value = value.replace("[ssc_name]", ssc_name)
+                    if ssc_description is not None:
+                        value = value.replace("[ssc_description]", ssc_description)
+                    value = value.replace("[room_id]", str(room_id)).replace("[room_num]", room_name)
+                    json_obj[key] = value
                 elif isinstance(value, (dict, list)):
-                    self.replace_placeholders(value, room_id, room_name)
+                    self.replace_placeholders(value, room_id, room_name, ssc_name, ssc_description)
         elif isinstance(json_obj, list):
             for item in json_obj:
-                self.replace_placeholders(item, room_id, room_name)
+                self.replace_placeholders(item, room_id, room_name, ssc_name, ssc_description)
 
     def remove_object_ids(self, obj):
         if isinstance(obj, dict):
