@@ -1,137 +1,515 @@
 {
-    "description": "FAILURE OF COMPONENT [ssc_name] DUE TO SEISMIC INDUCED FLOODING",
-    "name": "[ssc_name]-SIF-FT", 
-    "type": "FT",
-    "logic_type": "AND",
-    "id": "SFL",
-    "inputs": [
+   "logic_type":"AND",
+   "id":"SSC-FL-FT",
+   "type":"FT",
+   "description":"FAILURE OF Component 9 IN Room A - Floor 1",
+   "name":"CMP-9-SIF-65026bcc7358e5227605e791-GT",
+   "inputs":[
       {
-        "logic_type": "AND",
-        "id": "SFLMR", 
-        "type": "GT",
-        "description": "FLOODING INSIDE ROOM  [main_room_num]",
-        "name": "SIF-R-[main_room_num]-GT", 
-        "inputs": [
-          {
-            "description": "SOURCES OF FLOODING INSIDE ROOM [main_room_num]",
-            "name": "SIF-SRC-R-[main_room_num]-GT",
-            "id": "SFLMR",  
-            "type": "GT",  
-            "logic_type": "OR",
-            "inputs": [
-              {
-                "name": "[ssc_flood_name]-SEIS-FT",
-                "description": "SEISMIC FAILURE OF  [ssc_flood_name] CAUSING FLOODING",
-                "id": "seismic_FT",
-                "num": "[num_ssc_flood]",
-                "logic_type": "OR"
-              }
-              
-            ]
-          }, 
-          {
-            "logic_type": "BE",
-            "name" : "[num_ssc_flood]-HRA", 
-            "type": "HRA",
-            "description": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [num_ssc_flood]"
-          }
-        
-        ]
+         "failure_model":{
+            "pressure_fragility":{
+               "distribution_type":"F",
+               "median_flood_depth":8.848324310866992,
+               "beta_r_uncertainty":0.6302367283784751,
+               "beta_u_uncertainty":1.2639625965053178
+            }
+         },
+         "description":"Component 9",
+         "name":"CMP-9",
+         "logic_type":"BE",
+         "type":"Flood-Failure"
       },
       {
-        "description": "FLOODING IN OTHER ROOMS PROPAGATING TO ROOM [main_room_num]",
-        "name": "SIF-R-[diff_room_num]-GT", 
-        "id": "SFLOR",
-        "type": "GT",
-        "logic_type": "OR",
-        "inputs": [
-          {
-            "description": "FLOODING PROPAGATING FROM ROOM [diff_room_num] TO ROOM [main_room_num]",
-            "name": "SIF-R-[diff_room_num]-PRG-GT", 
-            "id": "SFLOR",
-            "type": "GT",
-            "num": "[tot_room_num]",
-            "logic_type": "AND",
-            "inputs": [
-              {
-                "description": "SOURCES OF FLOODING INSIDE ROOM [diff_room_num]",
-                "name" : "SIF-SRC-R-[diff_room_num]-GT", 
-                "id": "SFLOR",
-                "type": "GT",
-                "logic_type": "AND",
-                "inputs": [
+         "id":"SF-RP",
+         "description":"FLOODING OCCURS IN OR MIGRATES TO Room A - Floor 1",
+         "logic_type":"OR",
+         "name":"SIFP-65026bcc7358e5227605e791-GT",
+         "type":"GT",
+         "inputs":[
+            {
+               "logic_type":"AND",
+               "id":"SFR",
+               "type":"GT",
+               "description":"FLOODING INSIDE Room A - Floor 1",
+               "name":"SIF-R-65026bcc7358e5227605e791-GT",
+               "inputs":[
                   {
-                    "description": "SEISMIC FAILURE OF [ssc_flood_name]",
-                    "name": "[ssc_flood_name]-SEIS-FT",
-                    "id": "SFLOR",
-                    "type": "seismic_FT",
-                    "num_ssc_flood": "[num]",
-                    "logic_type": "OR"
+                     "id":"SOFR",
+                     "type":"GT",
+                     "description":"SOURCES OF FLOODING INSIDE Room A - Floor 1",
+                     "name":"SOF-R-65026bcc7358e5227605e791-GT",
+                     "logic_type":"OR",
+                     "inputs":[
+                        {
+                           "failure_model":{
+                              "seismic_fragility":{
+                                 "distribution_type":"L",
+                                 "median_seismic_acceleration":1.4758237844122848,
+                                 "beta_r_uncertainty":0.41516330769194965,
+                                 "beta_u_uncertainty":0.11910456471042481
+                              }
+                           },
+                           "description":"Flooding Source 4",
+                           "name":"FLD-SRC-4",
+                           "type":"Seismic-FT",
+                           "logic_type":"OR"
+                        },
+                        {
+                           "failure_model":{
+                              "seismic_fragility":{
+                                 "distribution_type":"L",
+                                 "median_seismic_acceleration":0.4567772179726295,
+                                 "beta_r_uncertainty":0.2858671258039936,
+                                 "beta_u_uncertainty":0.09282593265315012
+                              }
+                           },
+                           "description":"Flooding Source 3",
+                           "name":"FLD-SRC-3",
+                           "type":"Seismic-FT",
+                           "logic_type":"OR"
+                        }
+                     ]
                   },
                   {
-                    "logic_type": "BE",
-                    "name" : "[num_ssc_flood]-HRA", 
-                    "type": "HRA",
-                    "description": "FAILURE OF OPERATOR ACTION TO PREVENT FLOODING OF [ssc_flood_name]"
+                     "failure_model":{
+                        "HRA":{
+                           "distribution_type":"P",
+                           "prob":0.01
+                        }
+                     },
+                     "description":"Operator Action to Stop Flooding in Room A",
+                     "name":"HRA-FLD-A"
                   }
-                ]
-              }
-            ]
-          },
-          {
-            "description": "BARRIERS COLLAPSE",
-            "name": "BARR-COLL-[ssc_name]-GT", 
-            "id": "SFLOR",
-            "type": "GT",
-            "logic_type": "AND",
-            "inputs": [
-              {
-                "description": "BARRIERS OF ROOM [main_room_num]",
-                "name": "BARR-COLL-R-[main_room_num]-[ssc_name]-GT", 
-                "id": "SFLMR",
-                "type": "GT",
-                "logic_type": "OR",
-                "inputs": [
+               ]
+            },
+            {
+               "logic_type":"OR",
+               "id":"SFP-MR",
+               "type":"GT",
+               "description":"FLOODING PROPAGATES To Room A - Floor 1",
+               "name":"SFP-MR-65026bcc7358e5227605e791-GT",
+               "inputs":[
                   {
-                    "description": "SEISMIC FAILURE OF [barrier_main]",
-                    "name": "[barrier_mr]-SEIS-FT", 
-                    "logic_type": "OR",
-                    "id": "barrier_mr",
-                    "type": "seismic_FT"
+                     "logic_type":"AND",
+                     "id":"SFP",
+                     "type":"GT",
+                     "description":"FloodING PROPAGATES FROM Room C - Floor 1",
+                     "name":"SFP-R-65026bd07358e5227605e7a3-GT",
+                     "inputs":[
+                        {
+                           "logic_type":"AND",
+                           "id":"SFR",
+                           "type":"GT",
+                           "description":"FLOODING INSIDE Room C - Floor 1",
+                           "name":"SIF-R-65026bd07358e5227605e7a3-GT",
+                           "inputs":[
+                              {
+                                 "id":"SOFR",
+                                 "type":"GT",
+                                 "description":"SOURCES OF FLOODING INSIDE Room C - Floor 1",
+                                 "name":"SOF-R-65026bd07358e5227605e7a3-GT",
+                                 "logic_type":"OR",
+                                 "inputs":[
+                                    {
+                                       "failure_model":{
+                                          "seismic_fragility":{
+                                             "distribution_type":"L",
+                                             "median_seismic_acceleration":0.8639648675349997,
+                                             "beta_r_uncertainty":0.4473192548918091,
+                                             "beta_u_uncertainty":0.13227964097583897
+                                          }
+                                       },
+                                       "description":"Flooding Source 3",
+                                       "name":"FLD-SRC-3",
+                                       "type":"Seismic-FT",
+                                       "logic_type":"OR"
+                                    }
+                                 ]
+                              },
+                              {
+                                 "failure_model":{
+                                    "HRA":{
+                                       "distribution_type":"P",
+                                       "prob":0.03
+                                    }
+                                 },
+                                 "description":"Operator Action to Stop Flooding in Room C",
+                                 "name":"HRA-FLD-C"
+                              }
+                           ]
+                        },
+                        {
+                           "inputs":[
+                              {
+                                 "failure_model":{
+                                    "distribution_type":"SL",
+                                    "median_seismic_acceleration":1.6387783002841312,
+                                    "beta_r_uncertainty":0.21615103074210976,
+                                    "beta_u_uncertainty":0.048991199683098494
+                                 },
+                                 "type":"Seismic-FT",
+                                 "logic_type":"OR"
+                              },
+                              {
+                                 "failure_model":{
+                                    "distribution_type":"FL",
+                                    "median_flood_depth":4.638778300284131,
+                                    "beta_r_uncertainty":0.8861510307421098,
+                                    "beta_u_uncertainty":1.4991199683098495
+                                 },
+                                 "type":"PF-BE",
+                                 "logic_type":"BE"
+                              }
+                           ],
+                           "description":"COLLAPSE OF FLOOD BARRIER IN ROOM Room C - Floor 1",
+                           "name":"CFB-R-65026bd07358e5227605e7a3-GT",
+                           "logic_type":"OR",
+                           "type":"GT"
+                        }
+                     ]
                   },
                   {
-                    "logic_type": "BE",
-                    "name": "[barrier_mr]-PRS-BE", 
-                    "type": "pressure",
-                    "description": "COLLAPSE OF WATER BARRIER IN ROOM [main_room_num] DUE TO PRESSURE"
-                    
+                     "logic_type":"AND",
+                     "id":"SFP",
+                     "type":"GT",
+                     "description":"FloodING PROPAGATES FROM Room B - Floor 1",
+                     "name":"SFP-R-65026bcf7358e5227605e79b-GT",
+                     "inputs":[
+                        {
+                           "logic_type":"AND",
+                           "id":"SFR",
+                           "type":"GT",
+                           "description":"FLOODING INSIDE Room B - Floor 1",
+                           "name":"SIF-R-65026bcf7358e5227605e79b-GT",
+                           "inputs":[
+                              {
+                                 "id":"SOFR",
+                                 "type":"GT",
+                                 "description":"SOURCES OF FLOODING INSIDE Room B - Floor 1",
+                                 "name":"SOF-R-65026bcf7358e5227605e79b-GT",
+                                 "logic_type":"OR",
+                                 "inputs":[
+                                    {
+                                       "failure_model":{
+                                          "seismic_fragility":{
+                                             "distribution_type":"L",
+                                             "median_seismic_acceleration":0.6651129914538945,
+                                             "beta_r_uncertainty":0.29927228905308895,
+                                             "beta_u_uncertainty":0.3180088579888874
+                                          }
+                                       },
+                                       "description":"Flooding Source 1",
+                                       "name":"FLD-SRC-1",
+                                       "type":"Seismic-FT",
+                                       "logic_type":"OR"
+                                    },
+                                    {
+                                       "failure_model":{
+                                          "seismic_fragility":{
+                                             "distribution_type":"L",
+                                             "median_seismic_acceleration":0.13170664587190056,
+                                             "beta_r_uncertainty":0.42082254193584895,
+                                             "beta_u_uncertainty":0.3448447316555707
+                                          }
+                                       },
+                                       "description":"Flooding Source 2",
+                                       "name":"FLD-SRC-2",
+                                       "type":"Seismic-FT",
+                                       "logic_type":"OR"
+                                    }
+                                 ]
+                              },
+                              {
+                                 "failure_model":{
+                                    "HRA":{
+                                       "distribution_type":"P",
+                                       "prob":0.02
+                                    }
+                                 },
+                                 "description":"Operator Action to Stop Flooding in Room B",
+                                 "name":"HRA-FLD-B"
+                              }
+                           ]
+                        },
+                        {
+                           "inputs":[
+                              {
+                                 "failure_model":{
+                                    "distribution_type":"SL",
+                                    "median_seismic_acceleration":1.6387783002841312,
+                                    "beta_r_uncertainty":0.21615103074210976,
+                                    "beta_u_uncertainty":0.048991199683098494
+                                 },
+                                 "type":"Seismic-FT",
+                                 "logic_type":"OR"
+                              },
+                              {
+                                 "failure_model":{
+                                    "distribution_type":"FL",
+                                    "median_flood_depth":4.638778300284131,
+                                    "beta_r_uncertainty":0.8861510307421098,
+                                    "beta_u_uncertainty":1.4991199683098495
+                                 },
+                                 "type":"PF-BE",
+                                 "logic_type":"BE"
+                              }
+                           ],
+                           "description":"COLLAPSE OF FLOOD BARRIER IN ROOM Room B - Floor 1",
+                           "name":"CFB-R-65026bcf7358e5227605e79b-GT",
+                           "type":"GT",
+                           "logic_type":"OR"
+                        }
+                     ]
                   }
-                ]
-              },
-              {
-                "description": "BARRIERS OF ROOM [diff_room_num]",
-                "name": "BARR-COLL-R-[diff_room_num]-[ssc_name]-GT", 
-                "id": "SFLOR",
-                "type": "GT",
-                "logic_type": "OR",
-                "inputs": [
+               ]
+            }
+         ]
+      },
+      {
+         "id":"SF-RP",
+         "description":"FLOODING OCCURS IN OR MIGRATES TO Room A - Floor 1",
+         "logic_type":"OR",
+         "name":"SIFP-65026bcc7358e5227605e791-GT",
+         "type":"GT",
+         "inputs":[
+            {
+               "logic_type":"AND",
+               "id":"SFR",
+               "type":"GT",
+               "description":"FLOODING INSIDE Room A - Floor 1",
+               "name":"SIF-R-65026bcc7358e5227605e791-GT",
+               "inputs":[
                   {
-                    "description": "SEISMIC FAILURE OF [barrier_other]",
-                    "name": "[barrier_or]-SEIS-FT", 
-                    "logic_type": "OR",
-                    "type": "seismic_FT"
+                     "id":"SOFR",
+                     "type":"GT",
+                     "description":"SOURCES OF FLOODING INSIDE Room A - Floor 1",
+                     "name":"SOF-R-65026bcc7358e5227605e791-GT",
+                     "logic_type":"OR",
+                     "inputs":[
+                        {
+                           "failure_model":{
+                              "seismic_fragility":{
+                                 "distribution_type":"L",
+                                 "median_seismic_acceleration":1.4758237844122848,
+                                 "beta_r_uncertainty":0.41516330769194965,
+                                 "beta_u_uncertainty":0.11910456471042481
+                              }
+                           },
+                           "description":"Flooding Source 4",
+                           "name":"FLD-SRC-4",
+                           "type":"Seismic-FT",
+                           "logic_type":"OR"
+                        },
+                        {
+                           "failure_model":{
+                              "seismic_fragility":{
+                                 "distribution_type":"L",
+                                 "median_seismic_acceleration":0.4567772179726295,
+                                 "beta_r_uncertainty":0.2858671258039936,
+                                 "beta_u_uncertainty":0.09282593265315012
+                              }
+                           },
+                           "description":"Flooding Source 3",
+                           "name":"FLD-SRC-3",
+                           "type":"Seismic-FT",
+                           "logic_type":"OR"
+                        }
+                     ]
                   },
                   {
-                    "logic_type": "BE",
-                    "name": "[barrier_mr]-PRS-BE", 
-                    "type": "pressure",
-                    "description": "COLLAPSE OF WATER BARRIER IN ROOM [diff_room_num] DUE TO PRESSURE"
+                     "failure_model":{
+                        "HRA":{
+                           "distribution_type":"P",
+                           "prob":0.01
+                        }
+                     },
+                     "description":"Operator Action to Stop Flooding in Room A",
+                     "name":"HRA-FLD-A"
                   }
-                ]
-              }
-            ]
-          }
-        ]
+               ]
+            },
+            {
+               "logic_type":"OR",
+               "id":"SFP-MR",
+               "type":"GT",
+               "description":"FLOODING PROPAGATES To Room A - Floor 1",
+               "name":"SFP-MR-65026bcc7358e5227605e791-GT",
+               "inputs":[
+                  {
+                     "logic_type":"AND",
+                     "id":"SFP",
+                     "type":"GT",
+                     "description":"FloodING PROPAGATES FROM Room C - Floor 1",
+                     "name":"SFP-R-65026bd07358e5227605e7a3-GT",
+                     "inputs":[
+                        {
+                           "logic_type":"AND",
+                           "id":"SFR",
+                           "type":"GT",
+                           "description":"FLOODING INSIDE Room C - Floor 1",
+                           "name":"SIF-R-65026bd07358e5227605e7a3-GT",
+                           "inputs":[
+                              {
+                                 "id":"SOFR",
+                                 "type":"GT",
+                                 "description":"SOURCES OF FLOODING INSIDE Room C - Floor 1",
+                                 "name":"SOF-R-65026bd07358e5227605e7a3-GT",
+                                 "logic_type":"OR",
+                                 "inputs":[
+                                    {
+                                       "failure_model":{
+                                          "seismic_fragility":{
+                                             "distribution_type":"L",
+                                             "median_seismic_acceleration":0.8639648675349997,
+                                             "beta_r_uncertainty":0.4473192548918091,
+                                             "beta_u_uncertainty":0.13227964097583897
+                                          }
+                                       },
+                                       "description":"Flooding Source 3",
+                                       "name":"FLD-SRC-3",
+                                       "type":"Seismic-FT",
+                                       "logic_type":"OR"
+                                    }
+                                 ]
+                              },
+                              {
+                                 "failure_model":{
+                                    "HRA":{
+                                       "distribution_type":"P",
+                                       "prob":0.03
+                                    }
+                                 },
+                                 "description":"Operator Action to Stop Flooding in Room C",
+                                 "name":"HRA-FLD-C"
+                              }
+                           ]
+                        },
+                        {
+                           "inputs":[
+                              {
+                                 "failure_model":{
+                                    "distribution_type":"SL",
+                                    "median_seismic_acceleration":1.6387783002841312,
+                                    "beta_r_uncertainty":0.21615103074210976,
+                                    "beta_u_uncertainty":0.048991199683098494
+                                 },
+                                 "type":"Seismic-FT",
+                                 "logic_type":"OR"
+                              },
+                              {
+                                 "failure_model":{
+                                    "distribution_type":"FL",
+                                    "median_flood_depth":4.638778300284131,
+                                    "beta_r_uncertainty":0.8861510307421098,
+                                    "beta_u_uncertainty":1.4991199683098495
+                                 },
+                                 "type":"PF-BE",
+                                 "logic_type":"BE"
+                              }
+                           ],
+                           "description":"COLLAPSE OF FLOOD BARRIER IN ROOM Room C - Floor 1",
+                           "name":"CFB-R-65026bd07358e5227605e7a3-GT",
+                           "logic_type":"OR",
+                           "type":"GT"
+                        }
+                     ]
+                  },
+                  {
+                     "logic_type":"AND",
+                     "id":"SFP",
+                     "type":"GT",
+                     "description":"FloodING PROPAGATES FROM Room B - Floor 1",
+                     "name":"SFP-R-65026bcf7358e5227605e79b-GT",
+                     "inputs":[
+                        {
+                           "logic_type":"AND",
+                           "id":"SFR",
+                           "type":"GT",
+                           "description":"FLOODING INSIDE Room B - Floor 1",
+                           "name":"SIF-R-65026bcf7358e5227605e79b-GT",
+                           "inputs":[
+                              {
+                                 "id":"SOFR",
+                                 "type":"GT",
+                                 "description":"SOURCES OF FLOODING INSIDE Room B - Floor 1",
+                                 "name":"SOF-R-65026bcf7358e5227605e79b-GT",
+                                 "logic_type":"OR",
+                                 "inputs":[
+                                    {
+                                       "failure_model":{
+                                          "seismic_fragility":{
+                                             "distribution_type":"L",
+                                             "median_seismic_acceleration":0.6651129914538945,
+                                             "beta_r_uncertainty":0.29927228905308895,
+                                             "beta_u_uncertainty":0.3180088579888874
+                                          }
+                                       },
+                                       "description":"Flooding Source 1",
+                                       "name":"FLD-SRC-1",
+                                       "type":"Seismic-FT",
+                                       "logic_type":"OR"
+                                    },
+                                    {
+                                       "failure_model":{
+                                          "seismic_fragility":{
+                                             "distribution_type":"L",
+                                             "median_seismic_acceleration":0.13170664587190056,
+                                             "beta_r_uncertainty":0.42082254193584895,
+                                             "beta_u_uncertainty":0.3448447316555707
+                                          }
+                                       },
+                                       "description":"Flooding Source 2",
+                                       "name":"FLD-SRC-2",
+                                       "type":"Seismic-FT",
+                                       "logic_type":"OR"
+                                    }
+                                 ]
+                              },
+                              {
+                                 "failure_model":{
+                                    "HRA":{
+                                       "distribution_type":"P",
+                                       "prob":0.02
+                                    }
+                                 },
+                                 "description":"Operator Action to Stop Flooding in Room B",
+                                 "name":"HRA-FLD-B"
+                              }
+                           ]
+                        },
+                        {
+                           "inputs":[
+                              {
+                                 "failure_model":{
+                                    "distribution_type":"SL",
+                                    "median_seismic_acceleration":1.6387783002841312,
+                                    "beta_r_uncertainty":0.21615103074210976,
+                                    "beta_u_uncertainty":0.048991199683098494
+                                 },
+                                 "type":"Seismic-FT",
+                                 "logic_type":"OR"
+                              },
+                              {
+                                 "failure_model":{
+                                    "distribution_type":"FL",
+                                    "median_flood_depth":4.638778300284131,
+                                    "beta_r_uncertainty":0.8861510307421098,
+                                    "beta_u_uncertainty":1.4991199683098495
+                                 },
+                                 "type":"PF-BE",
+                                 "logic_type":"BE"
+                              }
+                           ],
+                           "description":"COLLAPSE OF FLOOD BARRIER IN ROOM Room B - Floor 1",
+                           "name":"CFB-R-65026bcf7358e5227605e79b-GT",
+                           "type":"GT",
+                           "logic_type":"OR"
+                        }
+                     ]
+                  }
+               ]
+            }
+         ]
       }
-    ]
-  }
+   ]
+}

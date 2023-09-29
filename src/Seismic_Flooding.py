@@ -10,7 +10,7 @@ class Node:
         self.children = []
 
 
-class SeismicFloodingFaultTree:
+class TreeBuilder:
     def __init__(self):
         self.tree = None
 
@@ -19,27 +19,36 @@ class SeismicFloodingFaultTree:
 
     def _build_node(self, node_data):
         logic_type = node_data.get("logic_type")
+
+        # Check if logic_type is None or name is None, and if so, return None to ignore this node
+        if logic_type is None or node_data.get("name") is None:
+            return None
+
         description = node_data.get("description")
         node_type = node_data.get("type")
         name = node_data.get("name")
-        node = Node(logic_type, description, node_type,name)
+        node = Node(logic_type, description, node_type, name)
 
         if "inputs" in node_data:
             inputs = node_data["inputs"]
             if isinstance(inputs, dict):
                 input_node = self._build_node(inputs)
-                node.children.append(input_node)
+                if input_node:
+                    node.children.append(input_node)
             elif isinstance(inputs, list):
                 for input_node_data in inputs:
                     input_node = self._build_node(input_node_data)
-                    node.children.append(input_node)
+                    if input_node:
+                        node.children.append(input_node)
         return node
 
-    def create_graph(self, node=None, graph=None):
+    def create_graph(self, node=None, graph=None, added_edges=None):
         if node is None:
             node = self.tree
         if graph is None:
             graph = pydot.Dot(graph_type="digraph")
+        if added_edges is None:
+            added_edges = set()
 
         if node.logic_type == "BE":
             node_shape = "octagon"
@@ -58,11 +67,16 @@ class SeismicFloodingFaultTree:
             node_width = 1.0
             node_height = 0.5
 
-        graph.add_node(pydot.Node(node.description, label=node.description, shape=node_shape, width=node_width, height=node_height))
+        graph.add_node(pydot.Node(node.description, label=node.description, shape=node_shape, width=node_width,
+                                  height=node_height))
 
         for child in node.children:
-            graph.add_edge(pydot.Edge(node.description, child.description))
-            self.create_graph(child, graph)
+            if child is not None:  # Check if child is not None
+                edge_description = f"{node.description}->{child.description}"
+                if edge_description not in added_edges:
+                    graph.add_edge(pydot.Edge(node.description, child.description))
+                    added_edges.add(edge_description)  # Add the edge to the set
+                    self.create_graph(child, graph, added_edges)
         return graph
 
     def visualize_tree(self):
@@ -74,7 +88,7 @@ class SeismicFloodingFaultTree:
     def print_tree(self, node=None, level=0):
         if node is None:
             return  # Exit the function if the node is None
-
+        print(node)
         print("  " * level + f"Logic Type: {node.logic_type}, Description: {node.description}, Type: {node.node_type}")
 
         for child in node.children:
@@ -146,46 +160,3 @@ class JSONEncoder(json.JSONEncoder):
 
 
 
-
-# Create a MongoDB client
-client = MongoClient('mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/')
-
-# Use a database
-db = client['seismic_flooding_database']
-
-components = db["components"]
-flood_barriers = db["flood_barriers"]
-flooding_propagation = db["flooding_propagation"]
-flooding_sources = db["flooding_sources"]
-rooms = db["rooms"]
-Flooding_HRA = db["Flooding_HRA"]
-
-
-
-# Construct the path to the JSON input file
-current_dir = os.path.dirname(os.path.abspath(__file__))
-json_filename = "flood_ft_propagation.json"
-json_file_path = os.path.join(current_dir, "..", "inputs", json_filename)
-
-# Read the JSON input from the file
-with open(json_file_path, "r") as json_file:
-    json_data = json.load(json_file)
-
-# Create instance of SeismicFloodingFaultTree
-fault_tree = SeismicFloodingFaultTree()
-
-
-# Print the tree hierarchy with node information
-fault_tree.print_tree()
-# Build the tree
-fault_tree.build_tree(json_data)
-
-# Visualize the tree
-fault_tree.visualize_tree()
-
-
-
-gtd_file = 'seismic_induced_flooding.GTD'
-ftl_file = 'seismic_induced_flooding.FTL'
-fault_tree.write_gtd(gtd_file)
-fault_tree.write_ftl(ftl_file)
