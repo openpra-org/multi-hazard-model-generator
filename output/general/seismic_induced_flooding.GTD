@@ -1,8 +1,0 @@
-SIF-R-[main_room_num]-GT,FLOODING INSIDE ROOM  [main_room_num], G-PWR
-SIF-SRC-R-[main_room_num]-GT,SOURCES OF FLOODING INSIDE ROOM [main_room_num], G-PWR
-SIF-R-[diff_room_num]-GT,FLOODING IN OTHER ROOMS PROPAGATING TO ROOM [main_room_num], G-PWR
-SIF-R-[diff_room_num]-PRG-GT,FLOODING PROPAGATING FROM ROOM [diff_room_num] TO ROOM [main_room_num], G-PWR
-SIF-SRC-R-[diff_room_num]-GT,SOURCES OF FLOODING INSIDE ROOM [diff_room_num], G-PWR
-BARR-COLL-[ssc_name]-GT,BARRIERS COLLAPSE, G-PWR
-BARR-COLL-R-[main_room_num]-[ssc_name]-GT,BARRIERS OF ROOM [main_room_num], G-PWR
-BARR-COLL-R-[diff_room_num]-[ssc_name]-GT,BARRIERS OF ROOM [diff_room_num], G-PWR

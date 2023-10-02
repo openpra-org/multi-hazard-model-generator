@@ -1,10 +1,6 @@
-from bson import json_util, ObjectId
-from pymongo import MongoClient
-import json
-import copy
-import warnings
 
-
+from tree_builder import TreeBuilder
+from src.imports import *
 
 class SeismicFloodingFaultTree:
     def __init__(self, mongodb_uri, db_name):
@@ -16,56 +12,52 @@ class SeismicFloodingFaultTree:
         self.barriers_collection = self.db["flood_barriers"]
         self.flooding_gate_temp = self.db["flooding_gate_temp"]
         self.flooding_HRA_collection = self.db["Flooding_HRA"]
-        self.flood_room_gate_representations = {} # Dictionary to store flood room gate_json_representation by room_id
-        self.propagation_from_one_room_representation = {} # Dictionary to store flood propagation from one room gate_json_representation by room_id
-        self.flood_propagation_to_room_representation = {}   #  Dictionary to store flood propagation to one room gate_json by room_id
         self.flooding_propagation_temp =self.db["propagation_gate_temp"]
         self.flood_barriers_collection = self.db["flood_barriers"]
         self.flooding_propagation_events = self.db["flooding_propagation"]
         self.ssc_fault_tree_template =  self.db["ssc_ft_temp"]
 
+        self.flood_room_gate_representations = {}  # Dictionary to store flood room gate_json_representation by room_id
+        self.propagation_from_one_room_representation = {}  # Dictionary to store flood propagation from one room gate_json_representation by room_id
+        self.flood_propagation_to_room_representation = {}  # Dictionary to store flood propagation to one room gate_json by room_id
         self.source_room_ids_dict = {}   # Dictionary to store source room ids with target room as key
         self.combination_of_flood_inside_propagation_dict = {}
-
-
+        self.ssc_ft_representation = {}
 
     def ssc_fault_tree(self):
-        # Iterate over documents in the self.ssc_seismic_flood collection
-        cursor = self.ssc_seismic_flood.find({})
-        ssc_fault_tree = json.loads(json_util.dumps(self.ssc_fault_tree_template.find_one()))
-
-        # Flood occurs inside or migrate to room gate template
-
+        # Get the flood_in_or_to_room_gate template
         flood_in_or_to_room_gate = self.ssc_fault_tree_template.find_one({"id": "SF-RP"})
 
-
-
+        # Iterate over documents in the self.ssc_seismic_flood collection
+        cursor = self.ssc_seismic_flood.find({})
 
         for ssc_document in cursor:
-
-
-
-            # Extract the room_id from the document
-            ssc_fault_tree_copy = copy.deepcopy(ssc_fault_tree)
-
             room_id = str(ssc_document.get("room_id"))
-
+            ssc_name = str(ssc_document.get("name"))
 
             # Check if the room_id exists in the rooms_collection
             room_info = self.rooms_collection.find_one({"_id": ObjectId(room_id)})
             room_num = room_info.get("name") if room_info else None
 
-            # Building flood_in_or_to_room gate
+            # Create a copy of the ssc_fault_tree_template
+            ssc_fault_tree_copy = copy.deepcopy(self.ssc_fault_tree_template.find_one())
+
+            # Build the flood_in_or_to_room_gate and add it to ssc_fault_tree_copy
             flood_in_or_to_room_gate_copy = copy.deepcopy(flood_in_or_to_room_gate)
+            self.build_combine_flood_inside_propagate(flood_in_or_to_room_gate_copy, room_id, room_num)
+            ssc_fault_tree_copy["inputs"].append(flood_in_or_to_room_gate_copy)
 
-            self.build_combine_flood_inside_propagate(flood_in_or_to_room_gate_copy,room_id,room_num)
-
-            self.replace_placeholders(ssc_fault_tree_copy,room_id,room_num,ssc_document.get("name"),ssc_document.get("description"))
-            self.add_ssc_failure_event(room_id,ssc_fault_tree_copy,ssc_document)
-            self.add_combined_flood_inside_propagate_to_ssc_ft(ssc_fault_tree_copy,flood_in_or_to_room_gate_copy)
+            # Replace placeholders and add failure event
+            self.replace_placeholders(ssc_fault_tree_copy, room_id, room_num, ssc_name, ssc_document.get("description"))
+            self.add_ssc_failure_event(room_id, ssc_fault_tree_copy, ssc_document)
+            self.add_combined_flood_inside_propagate_to_ssc_ft(ssc_fault_tree_copy, flood_in_or_to_room_gate_copy)
             self.remove_object_ids(ssc_fault_tree_copy)
-            print(ssc_fault_tree_copy)
+            self.remove_oid(ssc_fault_tree_copy)
+            self.remove_id_keys(ssc_fault_tree_copy)
+            # Store the result in the ssc_ft_representation dictionary
+            self.ssc_ft_representation[ssc_name] = ssc_fault_tree_copy
 
+        return self.ssc_ft_representation
 
     def add_combined_flood_inside_propagate_to_ssc_ft(self,ssc_ft,combined_doc):
         for index, input in enumerate(ssc_ft['inputs']):
@@ -443,19 +435,68 @@ class SeismicFloodingFaultTree:
         # If no matching document is found, return an empty list or raise an exception
         return []
 
+    def remove_oid(self, node_data):
+        if isinstance(node_data, dict):
+            # Check if the node has a '$oid' key and remove it along with its value
+            if '$oid' in node_data:
+                del node_data['$oid']
+
+            # Recursively process nested dictionaries and lists
+            for key, value in list(node_data.items()):
+                node_data[key] = self.remove_oid(value)
+        elif isinstance(node_data, list):
+            # Recursively process elements in a list
+            node_data = [self.remove_oid(item) for item in node_data]
+
+        return node_data
+
+    def remove_id_keys(self, node_data):
+        if isinstance(node_data, dict):
+            # Check if any key contains the substring '_id' and remove it along with its value
+            keys_to_remove = [key for key in node_data.keys() if '_id' in key]
+            for key in keys_to_remove:
+                del node_data[key]
+
+            # Recursively process nested dictionaries and lists
+            for key, value in list(node_data.items()):
+                node_data[key] = self.remove_id_keys(value)
+        elif isinstance(node_data, list):
+            # Recursively process elements in a list
+            node_data = [self.remove_id_keys(item) for item in node_data]
+
+        return node_data
 
 
-
-
+# Custom JSON Encoder to handle ObjectId
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)  # Convert ObjectId to its string representation
+        return super(JSONEncoder, self).default(o)
 
 def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/'
-    db_name = 'seismic_flooding_database'
+    flood_db_name = 'seismic_flooding_database'
+    general_db_name = 'MultiHazards_PRA_General'
+
     # Usage example
-    tree = SeismicFloodingFaultTree(mongodb_uri, db_name)
+    tree = SeismicFloodingFaultTree(mongodb_uri, flood_db_name)
     tree.flood_room_gate()  # This method doesn't return anything, so no need to pass it to scan_json_for_id
     tree.propagation_from_one_room_gate()
     tree.propagation_to_room()
-    tree.ssc_fault_tree()
+    ft = TreeBuilder(mongodb_uri, general_db_name)
+
+    json_fault_trees = [tree.ssc_fault_tree()["CMP-7"], tree.ssc_fault_tree()["CMP-17"]]
+    for json_fault_tree in json_fault_trees:
+        # Applying the seismic_flooding_fault_tree class on seismic-induced flooding fault tree json object
+        ft.build_tree(json_fault_tree)
+
+        # Print the tree hierarchy with node information
+        #ft.print_tree(ft.tree)
+
+        # Visualize the tree
+        #ft.visualize_tree()
+
+        ft.write_mard()
 if __name__ == "__main__":
     main()
