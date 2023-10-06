@@ -173,6 +173,9 @@ class TreeBuilder:
         # Create directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
         with open(os.path.join(output_dir, filename), 'a') as f:
+            first_node_name = self.tree.name
+
+            f.write(f"G-PWR, {first_node_name} =\n")
             def write_node(node):
                 if node.node_type == "seismic_FT":
                     f.write(f"{node.name}                           TRAN\n")
