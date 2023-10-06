@@ -495,7 +495,7 @@ def main():
         #ft.print_tree(ft.tree)
 
         # Visualize the tree
-        #ft.visualize_tree()
+        ft.visualize_tree()
 
         ft.write_mard()
 if __name__ == "__main__":
