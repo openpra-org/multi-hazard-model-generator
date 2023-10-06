@@ -1,5 +1,5 @@
 from src.imports import *
-
+from basic_event_model import BasicEventWriter
 
 class Node:
     def __init__(self, logic_type, description, node_type,name,failure_model=None):
@@ -20,7 +20,8 @@ class TreeBuilder:
         self.general_input_collection = self.db["General_Input"]
         self.unique_gate_names = set()
         self.unique_ft_names = set()
-        self.unique_BE_names = set()  # New set for Basic Event names
+        self.unique_BED_names = set()
+        self.unique_BEI_names = set()
 
     def build_tree(self, data):
         self.tree = self._build_node(data)
@@ -203,9 +204,9 @@ class TreeBuilder:
 
             def collect_nodes(node):
                 if node.logic_type == "BE":
-                    if node.name not in self.unique_BE_names:
+                    if node.name not in self.unique_BED_names:
                         f.write(f"{node.name},{node.description}, PWR\n")
-                        self.unique_BE_names.add(node.name)
+                        self.unique_BED_names.add(node.name)
                 for child in node.children:
                     collect_nodes(child)
 
@@ -220,11 +221,17 @@ class TreeBuilder:
         filename = 'seismic_induced_flooding.BEI'
         file_path = os.path.join(output_dir, filename)
 
+        # Create an instance of BasicEventWriter
+        bei_writer = BasicEventWriter()
+
         with open(file_path, 'a') as f:  # Change 'w' to 'a' for appending
 
             def collect_nodes(node):
                 if node.logic_type == "BE":
-                    f.write(f"{node.name},{node.description}, PWR\n")
+                    if node.name not in self.unique_BEI_names:
+                        # Call write_bei_data method with file and node arguments
+                        bei_writer.write_bei_data(node, f)
+                        self.unique_BEI_names.add(node.name)
                 for child in node.children:
                     collect_nodes(child)
 
@@ -236,6 +243,7 @@ class TreeBuilder:
         self.write_ftd()
         self.write_ftl()
         self.write_bed()
+        self.write_bei()
 
 # Custom JSON Encoder to handle ObjectId
 class JSONEncoder(json.JSONEncoder):

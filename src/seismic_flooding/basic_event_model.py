@@ -72,3 +72,11 @@ class BasicEventWriter:
     def HRA_model(self, node):
         # Write BEI for HRA model here
         pass
+
+
+    def write_bei_data(self, node, file):
+        if node.node_type == "Seismic-FT":
+            self.seismic_model(node, file)
+        elif node.node_type == "Flood-Failure":
+            self.flood_model(node, file)
+        # Add more conditions for other node types
