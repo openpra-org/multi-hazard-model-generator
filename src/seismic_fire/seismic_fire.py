@@ -9,13 +9,13 @@ class SeismicFireFaultTree:
         self.ssc_seismic_fire = self.db["components"]
         self.sources_collection = self.db["fire_sources"]
         self.rooms_collection = self.db["rooms"]
-        self.barriers_collection = self.db["fire_barriers"]
+        self.fire_barriers_collection = self.db["thermal_barriers"]
         self.fire_gate_temp = self.db["fire_gate_temp"]
-        self.fire_HRA_collection = self.db["Flooding_HRA"]
+        self.fire_HRA_collection = self.db["Fire_HRA"]
         self.fire_propagation_temp =self.db["propagation_gate_temp"]
-        self.fire_barriers_collection = self.db["fire_barriers"]
         self.fire_propagation_events = self.db["fire_propagation"]
         self.ssc_fault_tree_template =  self.db["ssc_ft_temp"]
+        self.fire_sprinkler_collection = self.db["fire_sprinkler"]
 
         self.fire_room_gate_representations = {}  # Dictionary to store fire room gate_json_representation by room_id
         self.propagation_from_one_room_representation = {}  # Dictionary to store fire propagation from one room gate_json_representation by room_id
@@ -26,7 +26,7 @@ class SeismicFireFaultTree:
 
     def ssc_fault_tree(self):
         # Get the fire_in_or_to_room_gate template
-        fire_in_or_to_room_gate = self.ssc_fault_tree_template.find_one({"id": "SF-RP"})
+        fire_in_or_to_room_gate = self.ssc_fault_tree_template.find_one({"id": "SFR-RP"})
 
         # Iterate over documents in the self.ssc_seismic_fire collection
         cursor = self.ssc_seismic_fire.find({})
@@ -62,7 +62,7 @@ class SeismicFireFaultTree:
     def add_combined_fire_inside_propagate_to_ssc_ft(self,ssc_ft,combined_doc):
         for index, input in enumerate(ssc_ft['inputs']):
             new_input = input
-            if 'id' in input and input['id'] == 'SF-RP':
+            if 'id' in input and input['id'] == 'SFR-RP':
                 new_input = combined_doc
                 ssc_ft['inputs'][index] = new_input
 
@@ -89,7 +89,7 @@ class SeismicFireFaultTree:
         new_input = {}
 
         # Check if the input has 'id' equal to 'SFP-MR0'
-        if 'id' in json_obj and json_obj['id'] == 'SF-RP':
+        if 'id' in json_obj and json_obj['id'] == 'SFR-RP':
             # Try to find the fire propagation gate document
             fire_inside_room = self.fire_room_gate_representations.get(room_id)
             if fire_inside_room:
@@ -98,7 +98,7 @@ class SeismicFireFaultTree:
                 # Append the updated document to the 'inputs' list
                 json_obj['inputs'].append(fire_inside_room)
             else:
-                warnings.warn(f"Flood propagation gate document not found for room_id: {room_id}", UserWarning)
+                warnings.warn(f"Fire propagation gate document not found for room_id: {room_id}", UserWarning)
 
 
     def add_fire_migrate_to_room_gate(self,json_obj,room_id):
@@ -111,7 +111,7 @@ class SeismicFireFaultTree:
         new_input = {}
 
         # Check if the input has 'id' equal to 'SFP-MR0'
-        if 'id' in json_obj and json_obj['id'] == 'SF-RP':
+        if 'id' in json_obj and json_obj['id'] == 'SFR-RP':
             # Try to find the fire propagation gate document
             fire_migrate_to_room = self.fire_propagation_to_room_representation.get(room_id)
             if fire_migrate_to_room:
@@ -120,7 +120,7 @@ class SeismicFireFaultTree:
                 # Append the updated document to the 'inputs' list
                 json_obj['inputs'].append(fire_migrate_to_room)
             else:
-                warnings.warn(f"Flood propagation gate document not found for room_id: {room_id}", UserWarning)
+                warnings.warn(f"Fire propagation gate document not found for room_id: {room_id}", UserWarning)
 
     def add_ssc_failure_event(self,room_id,json_obj,ssc_document):
 
@@ -146,7 +146,7 @@ class SeismicFireFaultTree:
         new_input = {}
 
         # Check if the input has 'id' equal to 'SFP-MR0'
-        if 'id' in json_obj and json_obj['id'] == 'SF-RP':
+        if 'id' in json_obj and json_obj['id'] == 'SFR-RP':
             # Try to find the fire propagation gate document
             fire_inside_room = self.fire_room_gate_representations.get(room_id)
             if fire_inside_room:
@@ -155,7 +155,7 @@ class SeismicFireFaultTree:
                 # Append the updated document to the 'inputs' list
                 json_obj['inputs'].append(fire_inside_room)
             else:
-                warnings.warn(f"Flood propagation gate document not found for room_id: {room_id}", UserWarning)
+                warnings.warn(f"Fire propagation gate document not found for room_id: {room_id}", UserWarning)
 
 
 
@@ -181,7 +181,9 @@ class SeismicFireFaultTree:
             # Replace placeholders in the JSON object
             self.replace_placeholders(template_fire_room_gate_json, room_id, room_name)
             # Add HRA events
+
             self.add_hra_events(template_fire_room_gate_json, room_id)
+            print(template_fire_room_gate_json)
             # Add sources of fire events
             self.add_sources_of_fire(template_fire_room_gate_json, self.sources_collection, room_id)
 
@@ -211,7 +213,7 @@ class SeismicFireFaultTree:
     def propagation_to_room(self):
 
         # Retrieve the propagation to room gate document
-        template_fire_propagation_to_room_gate = self.fire_propagation_temp.find_one({"id": "SFP-MR"})
+        template_fire_propagation_to_room_gate = self.fire_propagation_temp.find_one({"id": "SFRP-MR"})
         if template_fire_propagation_to_room_gate is None:
             raise Exception("Template fire propagation from room gate not found.")
 
@@ -250,7 +252,7 @@ class SeismicFireFaultTree:
         new_input = {}
 
         # Check if the input has 'id' equal to 'SFP-MR0'
-        if 'id' in json_obj and json_obj['id'] == 'SFP-MR':
+        if 'id' in json_obj and json_obj['id'] == 'SFRP-MR':
             # Try to find the fire propagation gate document
             propagation_gate_doc = self.propagation_from_one_room_representation.get(room_id)
             if propagation_gate_doc:
@@ -263,7 +265,7 @@ class SeismicFireFaultTree:
 
     def propagation_from_one_room_gate(self):
         # Retrieve the propagation from one room gate document
-        template_fire_propagation_gate = self.fire_propagation_temp.find_one({"id": "SFP"})
+        template_fire_propagation_gate = self.fire_propagation_temp.find_one({"id": "SFRP"})
         if template_fire_propagation_gate is None:
             raise Exception("Template fire propagation gate not found.")
 
@@ -290,13 +292,13 @@ class SeismicFireFaultTree:
         for index, input in enumerate(json_obj['inputs']):
             #print(input
             new_input = input
-            if 'id' in input and input['id'] == 'SIR':
+            if 'id' in input and input['id'] == 'SFRR':
                 new_input = self.get_fire_gate_by_room_id(room_id)
                 new_input['room_id'] = room_id
                 json_obj['inputs'][index] = new_input
 
             for key, value in json_obj.items():
-                if key == "id" and value == "SIR":
+                if key == "id" and value == "SFRR":
                     json_obj[key] = self.get_fire_gate_by_room_id(room_id)
         return json_obj
 
@@ -305,7 +307,7 @@ class SeismicFireFaultTree:
         for index, input in enumerate(json_obj['inputs']):
             new_input = input
             # Check if the input has 'id' equal to 'CFB'
-            if 'id' in input and input['id'] == 'CFB':
+            if 'id' in input and input['id'] == 'CTB':
                 # Try to find the fire barrier document
                 new_input = self.fire_barriers_collection.find_one({"room_id": ObjectId(room_id)},
                                                                       {'room_id': 0, '_id': 0})
@@ -314,50 +316,50 @@ class SeismicFireFaultTree:
                     new_input['room_id'] = room_id
                     json_obj['inputs'][index] = new_input
                 else:
-                    warnings.warn(f"Flood barrier document not found for room_id: {room_id}", UserWarning)
+                    warnings.warn(f"Thermal barrier document not found for room_id: {room_id}", UserWarning)
 
         for key, value in json_obj.items():
-            if key == "id" and value == "CFB":
+            if key == "id" and value == "CTB":
                 # Look for the fire barrier document with the matching room_id
                 barrier_doc = self.fire_barriers_collection.find_one({"room_id": ObjectId(room_id)})
                 if barrier_doc:
                     json_obj[key] = barrier_doc
                 else:
-                    warnings.warn(f"Flood barrier document not found for room_id: {room_id}", UserWarning)
+                    warnings.warn(f"Fire barrier document not found for room_id: {room_id}", UserWarning)
         self.replace_placeholders(json_obj,room_id,room_num)
         return json_obj
 
     def add_hra_events(self, json_obj, room_id, parent=None, parent_key=None):
+        hra_document = self.fire_HRA_collection.find_one({"room_id": ObjectId(room_id)}, {'room_id': 0, '_id': 0})
+
+        if hra_document is None:
+            raise ValueError(f"No HRA event associated with room_id {room_id}")
+
         for index, input in enumerate(json_obj['inputs']):
-            #print(input
-            new_input = input
-            if 'id' in input and input['id'] == 'Flood_HRA':
-                new_input = ((self.fire_HRA_collection.find_one({"room_id": ObjectId(room_id)}, {'room_id': 0,'_id': 0})))
+            if 'id' in input and input['id'] == 'Fire_HRA':
+                new_input = hra_document.copy()
                 new_input['room_id'] = room_id
                 json_obj['inputs'][index] = new_input
 
-
-
         for key, value in json_obj.items():
-            if key == "id" and value == "Flood_HRA":
-                # Look for the HRA document with the matching room_id
-                hra_document = self.fire_HRA_collection.find_one({"room_id": ObjectId(room_id)})
+            if key == "id" and value == "Fire_HRA":
                 json_obj[key] = hra_document
+
         return json_obj
 
     def add_sources_of_fire(self, json_obj, sources_collection, room_id):
         # Fetch SOFR documents from the MongoDB collection
         sofr_documents = list(sources_collection.find({"room_id": ObjectId(room_id)}))
 
-        # Find dictionaries within SIR_doc that contain "id": "SOFR" and update them
+        # Find dictionaries within fire_gate_temp that contain "id": "SOFRR" and update them
         if "inputs" in json_obj:
             for input_obj in json_obj["inputs"]:
-                if input_obj.get("id") == "SOFR":
+                if input_obj.get("id") == "SOFRR":
                     # Assuming input_obj is your JSON document
                     if "inputs" not in input_obj:
                         input_obj["inputs"] = []
 
-                    # Append SOFR documents from the fetched list
+                    # Append SOFRR documents from the fetched list
                     input_obj["inputs"].extend(sofr_documents)
 
 
@@ -476,17 +478,19 @@ class JSONEncoder(json.JSONEncoder):
 
 def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/'
-    fire_db_name = 'seismic_fire_database'
+    fire_db_name = 'seismic_induced_fire_database'
     general_db_name = 'MultiHazards_PRA_General'
 
     # Usage example
     tree = SeismicFireFaultTree(mongodb_uri, fire_db_name)
+
     tree.fire_room_gate()  # This method doesn't return anything, so no need to pass it to scan_json_for_id
+
     tree.propagation_from_one_room_gate()
     tree.propagation_to_room()
     ft = TreeBuilder(mongodb_uri, general_db_name)
 
-    json_fault_trees = [tree.ssc_fault_tree()["CMP-7"], tree.ssc_fault_tree()["CMP-17"]]
+    json_fault_trees = [tree.ssc_fault_tree()["CMP-FR-12"], tree.ssc_fault_tree()["CMP-FR-4"]]
     for json_fault_tree in json_fault_trees:
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object
         ft.build_tree(json_fault_tree)

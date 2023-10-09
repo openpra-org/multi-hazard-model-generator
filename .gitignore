@@ -6,7 +6,7 @@ tests/data/
 tests/inputs/
 tests/outputs/
 tests/reports/
-
+output/
 # Emacs files
 *~
 
