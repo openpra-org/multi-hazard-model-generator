@@ -92,8 +92,9 @@ class TreeBuilder:
 
     def visualize_tree(self):
         graph = self.create_graph()
-        graph.write_png("seismic_flooding_fault_tree.png")
-        img = Image.open("../seismic_flooding_fault_tree.png")
+        graph.write_png("seismic_fire_fault_tree.png")
+        img_path = os.path.abspath("seismic_fire_fault_tree.png")
+        img = Image.open(img_path)
         img.show()
 
     def print_tree(self, node=None, level=0):
@@ -110,7 +111,7 @@ class TreeBuilder:
         # Get current file directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
         # Gate file name
-        filename = 'seismic_induced_flooding.GTD'
+        filename = 'seismic_induced_fire.GTD'
 
         # Construct output directory
         output_dir = os.path.join(current_dir, "output")
@@ -143,7 +144,7 @@ class TreeBuilder:
         output_dir = os.path.join(current_dir,  "output")
 
         # fault tree file name
-        filename = 'seismic_induced_flooding.FTD'
+        filename = 'seismic_induced_fire.FTD'
         # Create directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
 
@@ -167,7 +168,7 @@ class TreeBuilder:
         # Construct output directory
         output_dir = os.path.join(current_dir,  "output")
 
-        filename = 'seismic_induced_flooding.FTL'
+        filename = 'seismic_induced_fire.FTL'
 
 
         # Create directory if it doesn't exist
@@ -195,7 +196,7 @@ class TreeBuilder:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         output_dir = os.path.join(current_dir,  "output")
         os.makedirs(output_dir, exist_ok=True)
-        filename = 'seismic_induced_flooding.BED'
+        filename = 'seismic_induced_fire.BED'
         file_path = os.path.join(output_dir, filename)
 
         with open(file_path, 'a') as f:  # Change 'w' to 'a' for appending
@@ -216,7 +217,7 @@ class TreeBuilder:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         output_dir = os.path.join(current_dir, "output")
         os.makedirs(output_dir, exist_ok=True)
-        filename = 'seismic_induced_flooding.BEI'
+        filename = 'seismic_induced_fire.BEI'
         file_path = os.path.join(output_dir, filename)
 
         with open(file_path, 'a') as f:  # Change 'w' to 'a' for appending

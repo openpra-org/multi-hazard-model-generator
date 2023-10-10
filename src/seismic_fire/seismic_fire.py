@@ -183,10 +183,10 @@ class SeismicFireFaultTree:
             # Add HRA events
 
             self.add_hra_events(template_fire_room_gate_json, room_id)
-            print(template_fire_room_gate_json)
             # Add sources of fire events
             self.add_sources_of_fire(template_fire_room_gate_json, self.sources_collection, room_id)
 
+            self.add_fire_sprinkler_failures(template_fire_room_gate_json,room_id)
             # Remove ObjectId values from the JSON representation
             gate_json_representation = self.remove_object_ids(template_fire_room_gate_json)
 
@@ -437,6 +437,22 @@ class SeismicFireFaultTree:
         # If no matching document is found, return an empty list or raise an exception
         return []
 
+    def add_fire_sprinkler_failures(self, json_obj, room_id):
+        # Look for the fire sprinkler document with the matching room_id
+        fire_sprinkler_document = self.fire_sprinkler_collection.find_one({"room_id": ObjectId(room_id)},
+                                                                          {'room_id': 0, '_id': 0})
+
+        if fire_sprinkler_document is None:
+            raise ValueError(f"No fire sprinkler failure event associated with room_id {room_id}")
+
+        for index, input in enumerate(json_obj['inputs']):
+            if 'id' in input and input['id'] == 'fire_sprk':
+                new_input = fire_sprinkler_document.copy()
+                new_input['room_id'] = room_id
+                json_obj['inputs'][index] = new_input
+
+        return json_obj
+
     def remove_oid(self, node_data):
         if isinstance(node_data, dict):
             # Check if the node has a '$oid' key and remove it along with its value
@@ -499,7 +515,7 @@ def main():
         #ft.print_tree(ft.tree)
 
         # Visualize the tree
-        #ft.visualize_tree()
+        ft.visualize_tree()
 
         ft.write_mard()
 if __name__ == "__main__":
