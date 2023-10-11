@@ -50,7 +50,6 @@ class SeismicFloodingFaultTree:
             # Replace placeholders and add failure event
             self.replace_placeholders(ssc_fault_tree_copy, room_id, room_num, ssc_name, ssc_document.get("description"))
             self.add_ssc_failure_event(room_id, ssc_fault_tree_copy, ssc_document)
-            self.add_combined_flood_inside_propagate_to_ssc_ft(ssc_fault_tree_copy, flood_in_or_to_room_gate_copy)
             self.remove_object_ids(ssc_fault_tree_copy)
             self.remove_oid(ssc_fault_tree_copy)
             self.remove_id_keys(ssc_fault_tree_copy)

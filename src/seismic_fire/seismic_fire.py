@@ -50,12 +50,14 @@ class SeismicFireFaultTree:
             # Replace placeholders and add failure event
             self.replace_placeholders(ssc_fault_tree_copy, room_id, room_num, ssc_name, ssc_document.get("description"))
             self.add_ssc_failure_event(room_id, ssc_fault_tree_copy, ssc_document)
-            self.add_combined_fire_inside_propagate_to_ssc_ft(ssc_fault_tree_copy, fire_in_or_to_room_gate_copy)
+            #self.add_combined_fire_inside_propagate_to_ssc_ft(ssc_fault_tree_copy, fire_in_or_to_room_gate_copy)
+            print(ssc_fault_tree_copy)
             self.remove_object_ids(ssc_fault_tree_copy)
             self.remove_oid(ssc_fault_tree_copy)
             self.remove_id_keys(ssc_fault_tree_copy)
             # Store the result in the ssc_ft_representation dictionary
             self.ssc_ft_representation[ssc_name] = ssc_fault_tree_copy
+            print(ssc_fault_tree_copy)
 
         return self.ssc_ft_representation
 
@@ -506,11 +508,11 @@ def main():
     tree.propagation_to_room()
     ft = TreeBuilder(mongodb_uri, general_db_name)
 
-    json_fault_trees = [tree.ssc_fault_tree()["CMP-FR-12"], tree.ssc_fault_tree()["CMP-FR-4"]]
+    json_fault_trees = [tree.ssc_fault_tree()["CMP-FR-4"]]
     for json_fault_tree in json_fault_trees:
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object
         ft.build_tree(json_fault_tree)
-
+        print(json_fault_tree)
         # Print the tree hierarchy with node information
         #ft.print_tree(ft.tree)
 
