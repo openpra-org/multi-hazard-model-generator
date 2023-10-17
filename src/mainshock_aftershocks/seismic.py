@@ -107,6 +107,12 @@ class SeismicEvent:
 
         return obj
 
+
+
+    def correlation_class(self):
+        # A correlation class object should be added to SSCs documents
+        # If the correlation is required this method is activated
+        pass
 def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net'
     general_db_name = 'MultiHazards_PRA_General'
@@ -119,6 +125,7 @@ def main():
     ft = TreeBuilder(mongodb_uri, general_db_name)
     ft.build_tree(mainshock_ft_template)
     ft.visualize_tree()
+    ft.write_mard()
 
 if __name__ == "__main__":
     main()

@@ -236,6 +236,7 @@ class TreeBuilder:
         self.write_ftd()
         self.write_ftl()
         self.write_bed()
+        self.write_bei()
 
 # Custom JSON Encoder to handle ObjectId
 class JSONEncoder(json.JSONEncoder):
