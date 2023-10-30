@@ -31,7 +31,7 @@ docker-compose.local.yml
 build_dev.sh
 .env
 env
-.png
+*.png
 # Compiled python modules.
 *.pyc
 
