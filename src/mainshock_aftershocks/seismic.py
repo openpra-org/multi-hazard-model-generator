@@ -10,7 +10,6 @@ class SeismicEvent:
         self.mainshock_ft = self.db["mainshock_ft"]
         self.aftershocks_ft = self.db["aftershocks_ft"]
 
-        self.nor_fault_tree_aftershocks_json_objects = {}  # Initialize an empty dictionary to store the JSON objects of nor gates of aftershocks
 
     def generate_mainshock_fault_tree(self):
         # Mainshock PGA bins
@@ -118,7 +117,7 @@ class SeismicEvent:
 
 
 
-    def create_aftershock_time_gate(self,ssc_document,MS_bin_num,aftershock_data,time_bin_num,Time):
+    def create_aftershock_time_gate(self,ssc_document,MS_bin_num,aftershock_data,time_bin_num,Time,NOR_time_aftershock_fault_trees_per_MS):
 
         room_id = str(ssc_document.get("room_id"))
         ssc_name = str(ssc_document.get("name"))
@@ -126,19 +125,11 @@ class SeismicEvent:
         aftershock_time_gate=self.aftershocks_ft.find_one({"id": "ASTGT"})
         aftershock_time_gate_copy = copy.deepcopy(aftershock_time_gate)
 
-        aftershock_nor_fault_tree_template = self.aftershocks_ft.find_one({"id": "NORAS"})
-        aftershock_nor_fault_tree_template_copy =  copy.deepcopy(aftershock_nor_fault_tree_template)
+
 
         self.replace_placeholders(aftershock_time_gate_copy,room_id,ssc_name,ssc_description,PGA_bin=None, PGA_bin_num=MS_bin_num,Time=Time,Time_bin_num=time_bin_num)
+        self.add_nor_fault_tree_inputs(aftershock_time_gate_copy,NOR_time_aftershock_fault_trees_per_MS,time_bin_num)
 
-        nor_fault_tree_objects = {}  # Create a dictionary to store NOR fault tree objects
-
-        # Create NOR fault tree objects and store them in the dictionary
-        nor_fault_tree = self.create_nor_fault_tree_aftershocks(
-                copy.deepcopy(aftershock_nor_fault_tree_template_copy),time_bin_num, Time, ssc_name, ssc_description, PGA_bin=None, PGA_bin_num=MS_bin_num)
-        nor_fault_tree_objects[time_bin_num] = nor_fault_tree
-        self.add_nor_fault_tree_inputs(aftershock_time_gate_copy, nor_fault_tree_objects)
-        print(aftershock_time_gate_copy)
         return aftershock_time_gate_copy
 
 
@@ -159,20 +150,19 @@ class SeismicEvent:
 
         if 'type' in ssc_document and ssc_document['type'] == 'SBE':
             if ssc_mission and len(ssc_mission) == 2:
-                start_mission = ssc_mission[0]
+                start_mission = ssc_mission[0]+delta_t
                 end_mission = ssc_mission[1]
 
-                for time_bin, time in enumerate(range(start_mission, end_mission + 1, delta_t), start=1):
-                    nor_fault_tree = self.create_nor_fault_tree_aftershocks(
-                        copy.deepcopy(aftershock_nor_fault_tree_template_copy), time_bin, time, ssc_name,
-                        ssc_description, PGA_bin=None, PGA_bin_num=PGA_bin_num)
+
+                NOR_time_aftershock_fault_trees_per_MS=self.create_nor_fault_tree_aftershocks(ssc_document,aftershocks_data,PGA_bin_num)
 
 
                 # Iterate over ssc_mission with delta_t step, and enumerate with index starting from 1
                 for time_bin, time in enumerate(range(start_mission, end_mission + 1, delta_t), start=1):
                     time_gate = self.create_aftershock_time_gate(ssc_document, PGA_bin_num, aftershocks_data, time_bin,
-                                                                 time)
+                                                                 time,NOR_time_aftershock_fault_trees_per_MS)
                     time_gate = self.remove_object_ids(time_gate)
+                    print(time_gate)
                     self.replace_placeholders(aftershock_mainshock_fault_tree_copy,room_id,ssc_name,ssc_description,PGA_bin,PGA_bin_num,Time=None,Time_bin_num=None)
                     # Append time_gate to the inputs array of the aftershock_mainshock_fault_tree_copy dictionary
                     if "inputs" in aftershock_mainshock_fault_tree_copy:
@@ -222,12 +212,16 @@ class SeismicEvent:
 
         return json_obj
 
-    def add_nor_fault_tree_inputs(self, aftershock_time_gate_copy, nor_fault_tree_objects):
+    def add_nor_fault_tree_inputs(self, aftershock_time_gate_copy, NOR_time_aftershock_fault_trees_per_MS, time_bin):
         if "inputs" in aftershock_time_gate_copy:
             inputs = aftershock_time_gate_copy["inputs"]
             if inputs and isinstance(inputs, list):
-                # Append nor_fault_tree_objects to the first "inputs" object
-                inputs.append(nor_fault_tree_objects)
+                # Iterate through NOR_time_aftershock_fault_trees_per_MS
+                for key, value in NOR_time_aftershock_fault_trees_per_MS.items():
+                    # Check if the key (time bin) is below the specified time_bin
+                    if key < time_bin:
+                        # Append the value (NOR fault tree) to the inputs array
+                        inputs.append(value)
 
     def get_aftershocks_data(self,general_input):
         general_input_data = general_input.find_one({})
@@ -238,6 +232,9 @@ class SeismicEvent:
 
         return aftershocks_data
 
+
+
+
     def create_nor_fault_tree_aftershocks(self, ssc_document,aftershocks_data,MS_bin_num):
         # Provide values for all the placeholders
         room_id = None  # Replace with the actual value if needed
@@ -247,27 +244,33 @@ class SeismicEvent:
         ssc_description = str(ssc_document.get("description"))
         delta_t = aftershocks_data["dt"]
 
+        start_mission = ssc_mission[0]+delta_t
+        end_mission = ssc_mission[1]
+
+        nor_fault_tree_aftershocks_json_objects = {}
+
         aftershock_nor_fault_tree_template = self.aftershocks_ft.find_one({"id": "NORAS"})
-        aftershock_nor_fault_tree_template_copy = copy.deepcopy(aftershock_nor_fault_tree_template)
 
+        for time_bin, time in enumerate(range(start_mission, end_mission + 1, delta_t), start=1):
 
+            aftershock_nor_fault_tree_template_copy = copy.deepcopy(aftershock_nor_fault_tree_template)
 
-        # Call the replace_placeholders method with all the values
-        self.replace_placeholders(
-            aftershock_nor_fault_tree_template_copy,
-            room_id=room_id,
-            ssc_name=ssc_name,
-            ssc_description=ssc_description,
-            PGA_bin=PGA_bin,
-            PGA_bin_num=PGA_bin_num,
-            Time=Time,
-            Time_bin_num=Time_bin_num
-        )
+            # Call the replace_placeholders method with all the values
+            self.replace_placeholders(
+                aftershock_nor_fault_tree_template_copy,
+                room_id=room_id,
+                ssc_name=ssc_name,
+                ssc_description=ssc_description,
+                PGA_bin=None,
+                PGA_bin_num=MS_bin_num,
+                Time=time,
+                Time_bin_num=time_bin
+            )
 
-        # Store the created JSON object in the dictionary with Time_bin_num as the key
-        self.nor_fault_tree_aftershocks_json_objects[Time_bin_num] = json_obj
-        return json_obj
+            # Store the created JSON object in the dictionary with Time_bin_num as the key
+            nor_fault_tree_aftershocks_json_objects[time_bin] = aftershock_nor_fault_tree_template_copy
 
+        return nor_fault_tree_aftershocks_json_objects
     def mean_aftershocks_number(self, aftershocks_params, mainshock_PGA, S, E):
 
         a = aftershocks_params["AF_arrival_params"]["a"]  # Read 'a' from aftershock_params
@@ -304,7 +307,7 @@ def main():
     mainshock_ft_template = tree.generate_mainshock_fault_tree()
     aftershock_gate = tree.create_aftershocks_main_gate()
     first_item = next(iter(aftershock_gate.values()))
-    print(first_item)
+    #print(first_item)
     # Assuming you want to create and visualize the tree using TreeBuilder
     ft = TreeBuilder(mongodb_uri, general_db_name)
     ft.build_tree(first_item)
