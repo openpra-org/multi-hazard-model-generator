@@ -1,5 +1,7 @@
 from src.imports import *
 from tree_builder import TreeBuilder
+
+
 class SeismicEvent:
     def __init__(self, mongodb_uri, db_name):
         self.client = MongoClient(mongodb_uri)
@@ -9,7 +11,6 @@ class SeismicEvent:
         self.general_input = self.db["General_Input"]
         self.mainshock_ft = self.db["mainshock_ft"]
         self.aftershocks_ft = self.db["aftershocks_ft"]
-
 
     def generate_mainshock_fault_tree(self):
         # Mainshock PGA bins
@@ -26,8 +27,6 @@ class SeismicEvent:
         if not all(isinstance(value, (int, float)) for value in ms_vector_values):
             raise ValueError("MS_vector contains non-numeric values.")
 
-
-
         cursor = self.ssc_seismic.find({})
         for ssc_document in cursor:
             # Call the mainshock fault tree template
@@ -36,12 +35,11 @@ class SeismicEvent:
             ssc_name = str(ssc_document.get("name"))
             ssc_description = str(ssc_document.get("description"))
             mainshock_ft_template = self.mainshock_ft.find_one({"id": "MSFT"})
-            self.replace_placeholders(mainshock_ft_template,room_id,ssc_name,ssc_description)
+            self.replace_placeholders(mainshock_ft_template, room_id, ssc_name, ssc_description)
             self.remove_object_ids(mainshock_ft_template)
 
-
             # Append the output of create_mainshock_pga_gate to mainshock_ft_template's inputs
-            mainshock_ft_template["inputs"].extend(self.create_mainshock_pga_gate(ssc_document,ms_vector_values))
+            mainshock_ft_template["inputs"].extend(self.create_mainshock_pga_gate(ssc_document, ms_vector_values))
 
             # Now you have the updated mainshock_ft_template
 
@@ -115,26 +113,21 @@ class SeismicEvent:
 
         return obj
 
-
-
-    def create_aftershock_time_gate(self,ssc_document,MS_bin_num,aftershock_data,time_bin_num,Time,NOR_time_aftershock_fault_trees_per_MS):
+    def create_aftershock_time_gate(self, ssc_document, MS_bin_num, aftershock_data, time_bin_num, Time,
+                                    NOR_time_aftershock_fault_trees_per_MS):
 
         room_id = str(ssc_document.get("room_id"))
         ssc_name = str(ssc_document.get("name"))
         ssc_description = str(ssc_document.get("description"))
-        aftershock_time_gate=self.aftershocks_ft.find_one({"id": "ASTGT"})
+        aftershock_time_gate = self.aftershocks_ft.find_one({"id": "ASTGT"})
         aftershock_time_gate_copy = copy.deepcopy(aftershock_time_gate)
 
-
-
-        self.replace_placeholders(aftershock_time_gate_copy,room_id,ssc_name,ssc_description,PGA_bin=None, PGA_bin_num=MS_bin_num,Time=Time,Time_bin_num=time_bin_num)
+        self.replace_placeholders(aftershock_time_gate_copy, room_id, ssc_name, ssc_description, PGA_bin=None,
+                                  PGA_bin_num=MS_bin_num, Time=Time, Time_bin_num=time_bin_num)
         self.add_aftershock_compound_event_gate(aftershock_time_gate_copy)
-        self.add_nor_fault_tree_inputs(aftershock_time_gate_copy,NOR_time_aftershock_fault_trees_per_MS,time_bin_num)
+        self.add_nor_fault_tree_inputs(aftershock_time_gate_copy, NOR_time_aftershock_fault_trees_per_MS, time_bin_num)
 
         return aftershock_time_gate_copy
-
-
-
 
     def create_aftershock_MS_ft(self, aftershocks_data, ssc_document, PGA_bin_num, PGA_bin):
 
@@ -151,20 +144,20 @@ class SeismicEvent:
 
         if 'type' in ssc_document and ssc_document['type'] == 'SBE':
             if ssc_mission and len(ssc_mission) == 2:
-                start_mission = ssc_mission[0]+delta_t
+                start_mission = ssc_mission[0] + delta_t
                 end_mission = ssc_mission[1]
 
-
-                NOR_time_aftershock_fault_trees_per_MS=self.create_nor_fault_tree_aftershocks(ssc_document,aftershocks_data,PGA_bin_num)
-
+                NOR_time_aftershock_fault_trees_per_MS = self.create_nor_fault_tree_aftershocks(ssc_document,
+                                                                                                aftershocks_data,
+                                                                                                PGA_bin_num)
 
                 # Iterate over ssc_mission with delta_t step, and enumerate with index starting from 1
                 for time_bin, time in enumerate(range(start_mission, end_mission + 1, delta_t), start=1):
                     time_gate = self.create_aftershock_time_gate(ssc_document, PGA_bin_num, aftershocks_data, time_bin,
-                                                                 time,NOR_time_aftershock_fault_trees_per_MS)
+                                                                 time, NOR_time_aftershock_fault_trees_per_MS)
                     time_gate = self.remove_object_ids(time_gate)
-                    print(time_gate)
-                    self.replace_placeholders(aftershock_mainshock_fault_tree_copy,room_id,ssc_name,ssc_description,PGA_bin,PGA_bin_num,Time=None,Time_bin_num=None)
+                    self.replace_placeholders(aftershock_mainshock_fault_tree_copy, room_id, ssc_name, ssc_description,
+                                              PGA_bin, PGA_bin_num, Time=None, Time_bin_num=None)
                     # Append time_gate to the inputs array of the aftershock_mainshock_fault_tree_copy dictionary
                     if "inputs" in aftershock_mainshock_fault_tree_copy:
                         aftershock_mainshock_fault_tree_copy["inputs"].append(time_gate)
@@ -176,7 +169,7 @@ class SeismicEvent:
         # Load aftershocks data and check if aftershocks are considered
         aftershocks_data = self.get_aftershocks_data(self.general_input)
         consider_aftershocks = aftershocks_data.get('consider_aftershocks')
-        MS_vector=self.general_input.find_one({}, {"Mainshock.MS_vector": 1})
+        MS_vector = self.general_input.find_one({}, {"Mainshock.MS_vector": 1})
         MS_vector = MS_vector['Mainshock']['MS_vector']
         aftershock_main_gate_temp = self.aftershocks_ft.find_one({"id": "ASFT"})
 
@@ -193,18 +186,20 @@ class SeismicEvent:
                 ssc_description = str(ssc_document.get("description"))
 
                 aftershock_main_gate_temp_copy = copy.deepcopy(aftershock_main_gate_temp)
-                self.replace_placeholders(aftershock_main_gate_temp_copy,room_id,ssc_name,ssc_description,PGA_bin=None,PGA_bin_num=None,Time=None,Time_bin_num=None)
+                self.replace_placeholders(aftershock_main_gate_temp_copy, room_id, ssc_name, ssc_description,
+                                          PGA_bin=None, PGA_bin_num=None, Time=None, Time_bin_num=None)
 
-                for PGA_bin_num,PGA_bin in enumerate(MS_vector,start =1):
-
-                    aftershock_main_gate=self.create_aftershock_MS_ft(aftershocks_data,ssc_document,PGA_bin_num,PGA_bin)
-                    self.add_aftershock_mainshock_gate(aftershock_main_gate_temp_copy,aftershock_main_gate)
+                for PGA_bin_num, PGA_bin in enumerate(MS_vector, start=1):
+                    aftershock_main_gate = self.create_aftershock_MS_ft(aftershocks_data, ssc_document, PGA_bin_num,
+                                                                        PGA_bin)
+                    self.add_aftershock_mainshock_gate(aftershock_main_gate_temp_copy, aftershock_main_gate)
                     self.remove_object_ids(aftershock_main_gate_temp_copy)
                     key = f'{room_id}-{ssc_name}'
 
                     aftershock_main_gate_temp_copies[key] = aftershock_main_gate_temp_copy
 
         return aftershock_main_gate_temp_copies
+
     def add_aftershock_mainshock_gate(self, json_obj, aftershock_mainshock_gate):
         # Find and update all elements with "id" equal to "ASGT"
         for input_obj in json_obj["inputs"]:
@@ -224,7 +219,7 @@ class SeismicEvent:
                         # Append the value (NOR fault tree) to the inputs array
                         inputs.append(value)
 
-    def get_aftershocks_data(self,general_input):
+    def get_aftershocks_data(self, general_input):
         general_input_data = general_input.find_one({})
         aftershocks_data = {}
 
@@ -233,10 +228,7 @@ class SeismicEvent:
 
         return aftershocks_data
 
-
-
-
-    def create_nor_fault_tree_aftershocks(self, ssc_document,aftershocks_data,MS_bin_num):
+    def create_nor_fault_tree_aftershocks(self, ssc_document, aftershocks_data, MS_bin_num):
         # Provide values for all the placeholders
         room_id = None  # Replace with the actual value if needed
 
@@ -245,7 +237,10 @@ class SeismicEvent:
         ssc_description = str(ssc_document.get("description"))
         delta_t = aftershocks_data["dt"]
 
-        start_mission = ssc_mission[0]+delta_t
+        ms_vector = self.general_input.find_one({}, {"Mainshock.MS_vector": 1})
+        ms_vector_values = ms_vector.get("Mainshock", {}).get("MS_vector", None)
+
+        start_mission = ssc_mission[0] + delta_t
         end_mission = ssc_mission[1]
 
         nor_fault_tree_aftershocks_json_objects = {}
@@ -253,7 +248,6 @@ class SeismicEvent:
         aftershock_nor_fault_tree_template = self.aftershocks_ft.find_one({"id": "NORAS"})
 
         for time_bin, time in enumerate(range(start_mission, end_mission + 1, delta_t), start=1):
-
             aftershock_nor_fault_tree_template_copy = copy.deepcopy(aftershock_nor_fault_tree_template)
 
             # Call the replace_placeholders method with all the values
@@ -271,37 +265,49 @@ class SeismicEvent:
             # Store the created JSON object in the dictionary with Time_bin_num as the key
             nor_fault_tree_aftershocks_json_objects[time_bin] = aftershock_nor_fault_tree_template_copy
 
+            #print(self.mean_aftershocks_number(ms_vector_values[MS_bin_num-1],time))
         return nor_fault_tree_aftershocks_json_objects
-    def mean_aftershocks_number(self, aftershocks_params, mainshock_PGA, S, E):
 
-        a = aftershocks_params["AF_arrival_params"]["a"]  # Read 'a' from aftershock_params
-        b = aftershocks_params["AF_arrival_params"]["b"]  # Read 'b' from aftershock_params
-        c = aftershocks_params["AF_arrival_params"]["c"]  # Read 'c' from aftershock_params
-        p = aftershocks_params["AF_arrival_params"]["p"]  # Read 'p' from aftershock_params
-        alpha = aftershocks_params["AF_arrival_params"]["alpha"]  # Read 'alpha' from aftershock_params
-        aftershocks_acceleration_vector = aftershocks_params[
-            "vector"]  # Use the aftershock vector from aftershock_params
+    def mean_aftershocks_number(self, mainshock_PGA, time):
+
+        aftershocks_params = self.get_aftershocks_data(self.general_input)
+        delta_T = aftershocks_params["dt"]
+
+        a = aftershocks_params["AF_arrival_params"]["a"]
+        b = aftershocks_params["AF_arrival_params"]["b"]
+        c = aftershocks_params["AF_arrival_params"]["c"]
+        p = aftershocks_params["AF_arrival_params"]["p"]
+        alpha = aftershocks_params["AF_arrival_params"]["alpha"]
+        aftershocks_acceleration_vector = aftershocks_params["vector"]
 
         number_aftershocks = [
             ((10) ** a) * ((mainshock_PGA / aftershock_PGA) ** (alpha * b)) * (1 / (1 - p)) * (
-                    (E + c) ** (1 - p) - (S + c) ** (1 - p))
+                    (time+delta_T + c) ** (1 - p) - (time + c) ** (1 - p))
             for aftershock_PGA in aftershocks_acceleration_vector
         ]
 
         aftershock_acceleration_array = np.array(aftershocks_acceleration_vector)
         geometric_mean = np.sqrt(aftershock_acceleration_array[:-1] * aftershock_acceleration_array[1:])
 
-        return number_aftershocks[:-1], geometric_mean
+        result_dict = {
+            "geometric_mean": geometric_mean.tolist(),
+            "number_aftershocks": number_aftershocks[:-1]
+        }
 
+        return result_dict
 
-    def add_aftershock_compound_event_gate(self,aftershock_time_gate_copy,MS_PGA_bin,Time_bin):
+    def create_aftershock_compound_event_gate(self,ssc_document,MS_PGA_bin, Time_bin_num,time):
 
-        # Copy of aftershocks compound event gate
-        aftershock_compound_event_gate_template = copy.deepcopy(self.aftershocks_ft.find_one({"id": "ASCEGT"}))
-
+        ms_vector = self.general_input.find_one({}, {"Mainshock.MS_vector": 1})
+        ms_vector_values = ms_vector.get("Mainshock", {}).get("MS_vector", None)
         aftershocks_data = self.get_aftershocks_data(self.general_input)
 
+        # Copy of aftershocks compound event gate
 
+        aftershock_compound_event_gate_template = copy.deepcopy(self.aftershocks_ft.find_one({"id": "ASCEGT"}))
+
+
+        aftershock_pga_mean_freq_dict = self.mean_aftershocks_number(ms_vector_values[MS_PGA_bin-1],time)
 
 
 
@@ -312,6 +318,8 @@ class SeismicEvent:
         # A correlation class object should be added to SSCs documents
         # If the correlation is required this method is activated
         pass
+
+
 def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net'
     general_db_name = 'MultiHazards_PRA_General'
@@ -321,14 +329,13 @@ def main():
     mainshock_ft_template = tree.generate_mainshock_fault_tree()
     aftershock_gate = tree.create_aftershocks_main_gate()
     first_item = next(iter(aftershock_gate.values()))
-    #print(first_item)
+    # print(first_item)
     # Assuming you want to create and visualize the tree using TreeBuilder
     ft = TreeBuilder(mongodb_uri, general_db_name)
     ft.build_tree(first_item)
-    #ft.visualize_tree()
-    #ft.write_mard()
+    # ft.visualize_tree()
+    # ft.write_mard()
+
 
 if __name__ == "__main__":
     main()
-
-
