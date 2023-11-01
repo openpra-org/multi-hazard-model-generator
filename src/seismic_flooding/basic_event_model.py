@@ -17,7 +17,7 @@ class BasicEventWriter:
             UdT = "S"
             UdValue = node.failure_model.get("beta_r_uncertainty", "")
             Prob = node.failure_model.get("median_seismic_acceleration", "")
-            Lambda = ""
+            Lambda = node.failure_model.get("pga", "")  # test this
             Tau = "0.000E+000"
             Mission = "0.000E+000"
             Init = ""
@@ -33,6 +33,10 @@ class BasicEventWriter:
             file.write(
                 f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
             )
+
+
+
+
         else:
             raise ValueError("Invalid distribution_type for seismic model")
 
@@ -80,3 +84,8 @@ class BasicEventWriter:
         elif node.node_type == "Flood-Failure":
             self.flood_model(node, file)
         # Add more conditions for other node types
+
+
+    def write_bec_data(self,node,file):
+        if node.node_type == "Seismic-FT":
+            pass

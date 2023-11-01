@@ -128,6 +128,7 @@ class SeismicEvent:
 
 
         self.replace_placeholders(aftershock_time_gate_copy,room_id,ssc_name,ssc_description,PGA_bin=None, PGA_bin_num=MS_bin_num,Time=Time,Time_bin_num=time_bin_num)
+        self.add_aftershock_compound_event_gate(aftershock_time_gate_copy)
         self.add_nor_fault_tree_inputs(aftershock_time_gate_copy,NOR_time_aftershock_fault_trees_per_MS,time_bin_num)
 
         return aftershock_time_gate_copy
@@ -291,6 +292,19 @@ class SeismicEvent:
         geometric_mean = np.sqrt(aftershock_acceleration_array[:-1] * aftershock_acceleration_array[1:])
 
         return number_aftershocks[:-1], geometric_mean
+
+
+    def add_aftershock_compound_event_gate(self,aftershock_time_gate_copy,MS_PGA_bin,Time_bin):
+
+        # Copy of aftershocks compound event gate
+        aftershock_compound_event_gate_template = copy.deepcopy(self.aftershocks_ft.find_one({"id": "ASCEGT"}))
+
+        aftershocks_data = self.get_aftershocks_data(self.general_input)
+
+
+
+
+
 
 
 

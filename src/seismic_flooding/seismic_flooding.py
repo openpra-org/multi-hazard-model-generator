@@ -87,7 +87,7 @@ class SeismicFloodingFaultTree:
         # Create a new input document to add to the 'inputs' list
         new_input = {}
 
-        # Check if the input has 'id' equal to 'SFP-MR0'
+        # Check if the input has 'id' equal to 'SFP-RP'
         if 'id' in json_obj and json_obj['id'] == 'SF-RP':
             # Try to find the flood propagation gate document
             flood_inside_room = self.flood_room_gate_representations.get(room_id)
