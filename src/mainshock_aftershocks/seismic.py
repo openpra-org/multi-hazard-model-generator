@@ -121,10 +121,10 @@ class SeismicEvent:
         ssc_description = str(ssc_document.get("description"))
         aftershock_time_gate = self.aftershocks_ft.find_one({"id": "ASTGT"})
         aftershock_time_gate_copy = copy.deepcopy(aftershock_time_gate)
-
+        self.create_aftershock_compound_event_gate(ssc_document,MS_bin_num,time_bin_num,Time)
         self.replace_placeholders(aftershock_time_gate_copy, room_id, ssc_name, ssc_description, PGA_bin=None,
                                   PGA_bin_num=MS_bin_num, Time=Time, Time_bin_num=time_bin_num)
-        self.add_aftershock_compound_event_gate(aftershock_time_gate_copy)
+        #self.add_aftershock_compound_event_gate(aftershock_time_gate_copy)
         self.add_nor_fault_tree_inputs(aftershock_time_gate_copy, NOR_time_aftershock_fault_trees_per_MS, time_bin_num)
 
         return aftershock_time_gate_copy
@@ -296,7 +296,7 @@ class SeismicEvent:
 
         return result_dict
 
-    def create_aftershock_compound_event_gate(self,ssc_document,MS_PGA_bin, Time_bin_num,time):
+    def create_aftershock_compound_event_gate(self, ssc_document, MS_PGA_bin, Time_bin_num, time):
 
         ms_vector = self.general_input.find_one({}, {"Mainshock.MS_vector": 1})
         ms_vector_values = ms_vector.get("Mainshock", {}).get("MS_vector", None)
@@ -304,15 +304,63 @@ class SeismicEvent:
 
         # Copy of aftershocks compound event gate
 
-        aftershock_compound_event_gate_template = copy.deepcopy(self.aftershocks_ft.find_one({"id": "ASCEGT"}))
+        mean_aftershock_pga_bin = self.mean_aftershocks_number(ms_vector_values[MS_PGA_bin - 1], time)
+
+        for key, value in mean_aftershock_pga_bin.items():
+
+            aftershock_compound_event_gate_template = copy.deepcopy(self.aftershocks_ft.find_one({"id": "ASCEGT"}))
+
+            if key == "geometric_mean":
+                # Access the geometric_mean value
+                geometric_mean = value
+            elif key == "number_aftershocks":
+                # Access the number_aftershocks value
+                number_aftershocks = value
+                for mean_number_aftershocks, geometric_mean_pga in zip(number_aftershocks, geometric_mean):
+                    print(self.update_failure_model_value_aftershock_freq(aftershock_compound_event_gate_template,"AF-VE",mean_number_aftershocks))
 
 
-        aftershock_pga_mean_freq_dict = self.mean_aftershocks_number(ms_vector_values[MS_PGA_bin-1],time)
 
 
+    def find_object_by_id(self, document, target_id, path=None):
+        if path is None:
+            path = []
 
+        if isinstance(document, list):
+            for index, item in enumerate(document):
+                new_path = path + [index]
+                result, result_path = self.find_object_by_id(item, target_id, new_path)
+                if result:
+                    return result, result_path
+        elif isinstance(document, dict):
+            if "id" in document and document["id"] == target_id:
+                return document, path
+            for key, value in document.items():
+                new_path = path + [key]
+                result, result_path = self.find_object_by_id(value, target_id, new_path)
+                if result:
+                    return result, result_path
 
+        return None, []
 
+    def update_failure_model_value_aftershock_freq(self, mongodb_document, target_id, new_value):
+        found_object, path_to_object = self.find_object_by_id(mongodb_document, target_id)
+
+        if found_object:
+            # Check if the found object has a "failure_model" and update its "value"
+            if "failure_model" in found_object:
+                found_object["failure_model"]["value"] = new_value
+
+            # Update the original document with the modified object
+            current_object = mongodb_document
+            for step in path_to_object[:-1]:
+                current_object = current_object[step]
+            current_object[path_to_object[-1]] = found_object
+
+            # Return the updated document
+            return mongodb_document
+
+        return None  # Return None if the target_id is not found in the document
 
     def correlation_class(self):
         # A correlation class object should be added to SSCs documents
