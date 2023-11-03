@@ -68,7 +68,7 @@ class SeismicEvent:
         return mainshock_gate_bins
 
     def replace_placeholders(self, json_obj, room_id=None, ssc_name=None, ssc_description=None, PGA_bin=None,
-                             PGA_bin_num=None, Time=None, Time_bin_num=None):
+                             PGA_bin_num=None, Time=None, Time_bin_num=None,AF_bin_num = None):
         if isinstance(json_obj, dict):
             for key, value in json_obj.items():
                 if isinstance(value, str):
@@ -88,13 +88,18 @@ class SeismicEvent:
                     if Time_bin_num is not None:
                         value = value.replace("[Time_bin_num]", str(Time_bin_num))
                     json_obj[key] = value
+
+                    if AF_bin_num is not None:
+                        value = value.replace("[AF_bin_num]", str(AF_bin_num))
+                    json_obj[key] = value
+
                 elif isinstance(value, (dict, list)):
                     self.replace_placeholders(value, room_id, ssc_name, ssc_description, PGA_bin, PGA_bin_num, Time,
-                                              Time_bin_num)
+                                              Time_bin_num,AF_bin_num)
         elif isinstance(json_obj, list):
             for item in json_obj:
                 self.replace_placeholders(item, room_id, ssc_name, ssc_description, PGA_bin, PGA_bin_num, Time,
-                                          Time_bin_num)
+                                          Time_bin_num,AF_bin_num)
 
     def remove_object_ids(self, obj):
         if isinstance(obj, dict):
@@ -302,6 +307,10 @@ class SeismicEvent:
         ms_vector_values = ms_vector.get("Mainshock", {}).get("MS_vector", None)
         aftershocks_data = self.get_aftershocks_data(self.general_input)
 
+        room_id = str(ssc_document.get("room_id"))
+        ssc_name = str(ssc_document.get("name"))
+        ssc_description = str(ssc_document.get("description"))
+
         # Copy of aftershocks compound event gate
 
         mean_aftershock_pga_bin = self.mean_aftershocks_number(ms_vector_values[MS_PGA_bin - 1], time)
@@ -316,9 +325,16 @@ class SeismicEvent:
             elif key == "number_aftershocks":
                 # Access the number_aftershocks value
                 number_aftershocks = value
-                for mean_number_aftershocks, geometric_mean_pga in zip(number_aftershocks, geometric_mean):
-                    print(self.update_failure_model_value_aftershock_freq(aftershock_compound_event_gate_template,"AF-VE",mean_number_aftershocks))
-
+                for AF_bin_num, (mean_number_aftershocks, geometric_mean_pga) in enumerate(
+                        zip(number_aftershocks, geometric_mean), start=1):
+                    self.update_failure_model_value(aftershock_compound_event_gate_template, "AF-VE", "value",
+                                                                    mean_number_aftershocks)
+                    self.replace_placeholders(aftershock_compound_event_gate_template, room_id, ssc_name,
+                                              ssc_description, ms_vector_values[MS_PGA_bin - 1], MS_PGA_bin, time,
+                                              Time_bin_num,AF_bin_num)
+                    self.add_failure_model_aftershock_fragility_event(aftershock_compound_event_gate_template,ssc_document)
+                    self.update_failure_model_value(aftershock_compound_event_gate_template,"AF-SE","pga",geometric_mean_pga)
+                    print(aftershock_compound_event_gate_template)
 
 
 
@@ -341,15 +357,16 @@ class SeismicEvent:
                 if result:
                     return result, result_path
 
+
         return None, []
 
-    def update_failure_model_value_aftershock_freq(self, mongodb_document, target_id, new_value):
+    def update_failure_model_value(self, mongodb_document, target_id, string_param,new_value):
         found_object, path_to_object = self.find_object_by_id(mongodb_document, target_id)
 
         if found_object:
             # Check if the found object has a "failure_model" and update its "value"
             if "failure_model" in found_object:
-                found_object["failure_model"]["value"] = new_value
+                found_object["failure_model"][string_param] = new_value
 
             # Update the original document with the modified object
             current_object = mongodb_document
@@ -361,6 +378,33 @@ class SeismicEvent:
             return mongodb_document
 
         return None  # Return None if the target_id is not found in the document
+
+    def add_failure_model_aftershock_fragility_event(self,mongodb_document, ssc_document):
+        extracted_failure_model = self.extract_object_mongodb(ssc_document, "failure_model")
+
+        if extracted_failure_model:
+            # Find the object with ID "AF-SE" in the MongoDB document
+            af_se_obj, path_to_af_se = self.find_object_by_id(mongodb_document, "AF-SE")
+
+            if af_se_obj:
+                # Update the "failure_model" value under "AF-SE" with the extracted_failure_model
+                af_se_obj["failure_model"] = extracted_failure_model
+                return mongodb_document  # Return the updated document
+
+        return None  # Return None if "AF-SE" or the extracted_failure_model is not found
+
+    def extract_object_mongodb(self,mongodb_doc,extracted_obj):
+
+        if extracted_obj in mongodb_doc:
+            obj = mongodb_doc[extracted_obj]
+            return obj
+        else:
+            return None
+
+
+
+
+
 
     def correlation_class(self):
         # A correlation class object should be added to SSCs documents
