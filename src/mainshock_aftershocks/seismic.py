@@ -126,12 +126,14 @@ class SeismicEvent:
         ssc_description = str(ssc_document.get("description"))
         aftershock_time_gate = self.aftershocks_ft.find_one({"id": "ASTGT"})
         aftershock_time_gate_copy = copy.deepcopy(aftershock_time_gate)
-        self.create_aftershock_compound_event_gate(ssc_document,MS_bin_num,time_bin_num,Time)
+        compound_event_gate=self.create_aftershock_compound_event_gate(ssc_document,MS_bin_num,time_bin_num,Time)
+        self.update_inputs(aftershock_time_gate_copy,"ASTFT",compound_event_gate)
+
         self.replace_placeholders(aftershock_time_gate_copy, room_id, ssc_name, ssc_description, PGA_bin=None,
                                   PGA_bin_num=MS_bin_num, Time=Time, Time_bin_num=time_bin_num)
         #self.add_aftershock_compound_event_gate(aftershock_time_gate_copy)
         self.add_nor_fault_tree_inputs(aftershock_time_gate_copy, NOR_time_aftershock_fault_trees_per_MS, time_bin_num)
-
+        print(aftershock_time_gate_copy)
         return aftershock_time_gate_copy
 
     def create_aftershock_MS_ft(self, aftershocks_data, ssc_document, PGA_bin_num, PGA_bin):
@@ -302,7 +304,6 @@ class SeismicEvent:
         return result_dict
 
     def create_aftershock_compound_event_gate(self, ssc_document, MS_PGA_bin, Time_bin_num, time):
-
         ms_vector = self.general_input.find_one({}, {"Mainshock.MS_vector": 1})
         ms_vector_values = ms_vector.get("Mainshock", {}).get("MS_vector", None)
         aftershocks_data = self.get_aftershocks_data(self.general_input)
@@ -311,13 +312,12 @@ class SeismicEvent:
         ssc_name = str(ssc_document.get("name"))
         ssc_description = str(ssc_document.get("description"))
 
-        # Copy of aftershocks compound event gate
+        # Initialize an empty list to store templates
+        aftershock_templates_list = []
 
         mean_aftershock_pga_bin = self.mean_aftershocks_number(ms_vector_values[MS_PGA_bin - 1], time)
 
         for key, value in mean_aftershock_pga_bin.items():
-
-            aftershock_compound_event_gate_template = copy.deepcopy(self.aftershocks_ft.find_one({"id": "ASCEGT"}))
 
             if key == "geometric_mean":
                 # Access the geometric_mean value
@@ -327,16 +327,24 @@ class SeismicEvent:
                 number_aftershocks = value
                 for AF_bin_num, (mean_number_aftershocks, geometric_mean_pga) in enumerate(
                         zip(number_aftershocks, geometric_mean), start=1):
+                    aftershock_compound_event_gate_template = copy.deepcopy(
+                        self.aftershocks_ft.find_one({"id": "ASCEGT"}))
+
                     self.update_failure_model_value(aftershock_compound_event_gate_template, "AF-VE", "value",
-                                                                    mean_number_aftershocks)
+                                                    mean_number_aftershocks)
+
                     self.replace_placeholders(aftershock_compound_event_gate_template, room_id, ssc_name,
                                               ssc_description, ms_vector_values[MS_PGA_bin - 1], MS_PGA_bin, time,
-                                              Time_bin_num,AF_bin_num)
-                    self.add_failure_model_aftershock_fragility_event(aftershock_compound_event_gate_template,ssc_document)
-                    self.update_failure_model_value(aftershock_compound_event_gate_template,"AF-SE","pga",geometric_mean_pga)
-                    print(aftershock_compound_event_gate_template)
+                                              Time_bin_num, AF_bin_num)
+                    self.add_failure_model_aftershock_fragility_event(aftershock_compound_event_gate_template,
+                                                                      ssc_document)
+                    self.update_failure_model_value(aftershock_compound_event_gate_template, "AF-SE", "pga",
+                                                    geometric_mean_pga)
 
+                    # Append the template to the list
+                    aftershock_templates_list.append(aftershock_compound_event_gate_template)
 
+        return aftershock_templates_list
 
     def find_object_by_id(self, document, target_id, path=None):
         if path is None:
@@ -378,6 +386,26 @@ class SeismicEvent:
             return mongodb_document
 
         return None  # Return None if the target_id is not found in the document
+
+    def update_inputs(self, mongodb_document, target_id, new_objects):
+        found_object, path_to_object = self.find_object_by_id(mongodb_document, target_id)
+
+        if found_object:
+
+            # Check if the found object has "inputs" and ensure it's a list
+            if "inputs" in found_object and isinstance(found_object["inputs"], list):
+                # Append the new objects to the "inputs" list
+                found_object["inputs"].append(new_objects)
+                # Update the original document with the modified "inputs"
+                current_object = mongodb_document
+                for step in path_to_object[:-1]:
+                    current_object = current_object[step]
+                current_object[path_to_object[-1]] = found_object
+
+                # Return the updated document
+                return mongodb_document
+
+        return None  # Return None if the target_id is not found or if "inputs" is not a list
 
     def add_failure_model_aftershock_fragility_event(self,mongodb_document, ssc_document):
         extracted_failure_model = self.extract_object_mongodb(ssc_document, "failure_model")
