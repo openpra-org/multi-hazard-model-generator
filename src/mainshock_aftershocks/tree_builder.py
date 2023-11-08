@@ -1,5 +1,5 @@
 from src.imports import *
-
+from basic_event_model import BasicEventWriter
 
 class Node:
     def __init__(self, logic_type, description, node_type,name,failure_model=None):
@@ -20,7 +20,8 @@ class TreeBuilder:
         self.general_input_collection = self.db["General_Input"]
         self.unique_gate_names = set()
         self.unique_ft_names = set()
-        self.unique_BE_names = set()  # New set for Basic Event names
+        self.unique_BED_names = set()
+        self.unique_BEI_names = set()
 
     def build_tree(self, data):
         self.tree = self._build_node(data)
@@ -37,20 +38,27 @@ class TreeBuilder:
         name = node_data.get("name")
         failure_model = node_data.get("failure_model")  # Failure model is optional
 
-        node = Node(logic_type, description, node_type, name,failure_model)
-
+        node = Node(logic_type, description, node_type, name, failure_model)
 
         if "inputs" in node_data:
             inputs = node_data["inputs"]
-            if isinstance(inputs, dict):
+            if isinstance(inputs, list):
+                for input_node_data in inputs:
+                    if isinstance(input_node_data, list):
+                        # Handle nested lists
+                        for nested_input_node_data in input_node_data:
+                            input_node = self._build_node(nested_input_node_data)
+                            if input_node:
+                                node.children.append(input_node)
+                    else:
+                        input_node = self._build_node(input_node_data)
+                        if input_node:
+                            node.children.append(input_node)
+            elif isinstance(inputs, dict):
                 input_node = self._build_node(inputs)
                 if input_node:
                     node.children.append(input_node)
-            elif isinstance(inputs, list):
-                for input_node_data in inputs:
-                    input_node = self._build_node(input_node_data)
-                    if input_node:
-                        node.children.append(input_node)
+
         return node
 
     def create_graph(self, node=None, graph=None, added_edges=None):
@@ -194,37 +202,42 @@ class TreeBuilder:
     def write_bed(self):
         """Append Basic Event Descriptions (BED) to an existing file for nodes with logic_type == 'BE'"""
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        output_dir = os.path.join(current_dir,  "output")
+        output_dir = os.path.join(current_dir, "output")
         os.makedirs(output_dir, exist_ok=True)
-        filename = 'seismic_induced_fire.BED'
+        filename = 'seismic.BED'
         file_path = os.path.join(output_dir, filename)
 
         with open(file_path, 'a') as f:  # Change 'w' to 'a' for appending
 
             def collect_nodes(node):
                 if node.logic_type == "BE":
-                    if node.name not in self.unique_BE_names:
+                    if node.name not in self.unique_BED_names:
                         f.write(f"{node.name},{node.description}, PWR\n")
-                        self.unique_BE_names.add(node.name)
+                        self.unique_BED_names.add(node.name)
                 for child in node.children:
                     collect_nodes(child)
 
             collect_nodes(self.tree)
-
 
     def write_bei(self):
         """Append Basic Event Descriptions (BED) to an existing file for nodes with logic_type == 'BE'"""
         current_dir = os.path.dirname(os.path.abspath(__file__))
         output_dir = os.path.join(current_dir, "output")
         os.makedirs(output_dir, exist_ok=True)
-        filename = 'seismic_induced_fire.BEI'
+        filename = 'seismic.BEI'
         file_path = os.path.join(output_dir, filename)
+
+        # Create an instance of BasicEventWriter
+        bei_writer = BasicEventWriter()
 
         with open(file_path, 'a') as f:  # Change 'w' to 'a' for appending
 
             def collect_nodes(node):
                 if node.logic_type == "BE":
-                    f.write(f"{node.name},{node.description}, PWR\n")
+                    if node.name not in self.unique_BEI_names:
+                        # Call write_bei_data method with file and node arguments
+                        bei_writer.write_bei_data(node, f)
+                        self.unique_BEI_names.add(node.name)
                 for child in node.children:
                     collect_nodes(child)
 

@@ -52,6 +52,20 @@ class SeismicEvent:
 
 
 
+    def create_seismic_fault_tree(self):
+
+        cursor = self.ssc_seismic.find({})
+        self.mainshock_ft_templates = {}
+        for ssc_document in cursor:
+            # Call the mainshock fault tree template
+
+            room_id = str(ssc_document.get("room_id"))
+            ssc_name = str(ssc_document.get("name"))
+
+            mainshock_fault_trees=self.generate_mainshock_fault_tree()
+            =self.create_aftershocks_main_gate()
+
+
 
 
     def create_mainshock_pga_gate(self, ssc_document, ms_vector_values):
@@ -523,12 +537,12 @@ def main():
     tree = SeismicEvent(mongodb_uri, general_db_name)
     mainshock_ft_template = tree.generate_mainshock_fault_tree()
     aftershock_gate = tree.create_aftershocks_main_gate()
-    #first_item = next(iter(aftershock_gate.values()))
+    first_item = next(iter(aftershock_gate.values()))
     # Assuming you want to create and visualize the tree using TreeBuilder
     ft = TreeBuilder(mongodb_uri, general_db_name)
-    #ft.build_tree(first_item)
+    ft.build_tree(first_item)
     # ft.visualize_tree()
-    # ft.write_mard()
+    ft.write_mard()
 
 
 if __name__ == "__main__":
