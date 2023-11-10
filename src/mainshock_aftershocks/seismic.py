@@ -16,8 +16,77 @@ class SeismicEvent:
         self.ASTFT_dict = {}
         self.NOR_time_aftershock_fault_trees_per_MS = {}
         self.mainshock_ft_templates = {}  # Global dictionary to store mainshock_ft_templates
+        self.aftershocks_ft_templates = {}
 
-    def generate_mainshock_fault_tree(self):
+
+    def create_seismic_fault_tree(self):
+
+        output_dir = "output"
+        aftershocks_data = self.get_aftershocks_data(self.general_input)
+
+        cursor = self.ssc_seismic.find({})
+        self.mainshock_ft_templates = {}
+        consider_aftershocks = aftershocks_data.get('consider_aftershocks')
+
+
+        if consider_aftershocks == "Yes":
+
+
+            # Add aftershocks fault tree to mainshock fault tree
+            for ssc_document in cursor:
+                aftershock_ft_temp=self.remove_object_ids(self.create_aftershocks_main_gate(ssc_document))
+                # Call the mainshock fault tree template
+                mainshock_ft_temp=self.remove_object_ids(self.generate_mainshock_fault_tree(ssc_document))
+
+                room_id = str(ssc_document.get("room_id"))
+                ssc_name = str(ssc_document.get("name"))
+                main_seismic_fault_tree_copy = self.remove_object_ids(copy.deepcopy(self.aftershocks_ft.find_one({"id": "SFT"})))
+                #print(type(main_seismic_fault_tree_copy))
+
+                #main_seismic_fault_tree_copy["inputs"]= aftershock_ft_temp
+                #main_seismic_fault_tree_copy["inputs"] = mainshock_ft_temp
+                main_seismic_fault_tree_copy["inputs"].append(aftershock_ft_temp)
+                main_seismic_fault_tree_copy["inputs"].append(mainshock_ft_temp)
+                # Create a unique JSON filename based on room_id and ssc_name
+                json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
+
+                # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
+                with open(json_filename, 'w') as json_file:
+                    json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
+
+
+        else:
+
+            # Add aftershocks fault tree to mainshock fault tree
+            for ssc_document in cursor:
+                # Call the mainshock fault tree template
+                mainshock_ft_temp = self.remove_object_ids(self.generate_mainshock_fault_tree(ssc_document))
+
+                room_id = str(ssc_document.get("room_id"))
+                ssc_name = str(ssc_document.get("name"))
+                main_seismic_fault_tree_copy = self.remove_object_ids(
+                    copy.deepcopy(self.aftershocks_ft.find_one({"id": "SFT"})))
+                # print(type(main_seismic_fault_tree_copy))
+
+                # main_seismic_fault_tree_copy["inputs"]= aftershock_ft_temp
+                main_seismic_fault_tree_copy["inputs"] = mainshock_ft_temp
+
+                # Create a unique JSON filename based on room_id and ssc_name
+                json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
+
+                # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
+                with open(json_filename, 'w') as json_file:
+                    json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
+
+
+
+
+
+
+
+
+
+    def generate_mainshock_fault_tree(self,ssc_document):
         # Mainshock PGA bins
         ms_vector = self.general_input.find_one({}, {"Mainshock.MS_vector": 1})
 
@@ -32,38 +101,37 @@ class SeismicEvent:
         if not all(isinstance(value, (int, float)) for value in ms_vector_values):
             raise ValueError("MS_vector contains non-numeric values.")
 
-        cursor = self.ssc_seismic.find({})
-        self.mainshock_ft_templates = {}
-        for ssc_document in cursor:
-            # Call the mainshock fault tree template
 
-            room_id = str(ssc_document.get("room_id"))
-            ssc_name = str(ssc_document.get("name"))
-            ssc_description = str(ssc_document.get("description"))
-            mainshock_ft_template = self.mainshock_ft.find_one({"id": "MSFT"})
-            self.replace_placeholders(mainshock_ft_template, room_id, ssc_name, ssc_description)
-            self.remove_object_ids(mainshock_ft_template)
+        # Call the mainshock fault tree template
 
-            # Append the output of create_mainshock_pga_gate to mainshock_ft_template's inputs
-            mainshock_ft_template["inputs"].extend(self.create_mainshock_pga_gate(ssc_document, ms_vector_values))
+        room_id = str(ssc_document.get("room_id"))
+        ssc_name = str(ssc_document.get("name"))
+        ssc_description = str(ssc_document.get("description"))
+        mainshock_ft_template = self.mainshock_ft.find_one({"id": "MSFT"})
+        self.replace_placeholders(mainshock_ft_template, room_id, ssc_name, ssc_description)
+        self.remove_object_ids(mainshock_ft_template)
+        # Append the output of create_mainshock_pga_gate to mainshock_ft_template's inputs
+        mainshock_ft_template["inputs"].extend(self.create_mainshock_pga_gate(ssc_document, ms_vector_values))
+        # Store the mainshock_ft_template in the global dictionary
+        #self.mainshock_ft_templates[(room_id, ssc_name)] = mainshock_ft_template
 
-            # Store the mainshock_ft_template in the global dictionary
-            self.mainshock_ft_templates[(room_id, ssc_name)] = mainshock_ft_template
+        return mainshock_ft_template
 
 
 
-    def create_seismic_fault_tree(self):
 
-        cursor = self.ssc_seismic.find({})
-        self.mainshock_ft_templates = {}
-        for ssc_document in cursor:
-            # Call the mainshock fault tree template
 
-            room_id = str(ssc_document.get("room_id"))
-            ssc_name = str(ssc_document.get("name"))
 
-            mainshock_fault_trees=self.generate_mainshock_fault_tree()
-            =self.create_aftershocks_main_gate()
+
+
+
+
+
+
+
+
+
+            #=self.create_aftershocks_main_gate()
 
 
 
@@ -202,16 +270,18 @@ class SeismicEvent:
                     time_gate = self.create_aftershock_time_gate(ssc_document, PGA_bin_num, aftershocks_data, time_bin,
                                                                  time, NOR_time_aftershock_fault_trees_per_MS)
                     time_gate = self.remove_object_ids(time_gate)
+
                     self.replace_placeholders(aftershock_mainshock_fault_tree_copy, room_id, ssc_name, ssc_description,
                                               PGA_bin, PGA_bin_num, Time=None, Time_bin_num=None)
                     # Append time_gate to the inputs array of the aftershock_mainshock_fault_tree_copy dictionary
                     if "inputs" in aftershock_mainshock_fault_tree_copy:
                         aftershock_mainshock_fault_tree_copy["inputs"].append(time_gate)
+                        #print(type(aftershock_mainshock_fault_tree_copy))
 
         #print(aftershock_mainshock_fault_tree_copy)
         return aftershock_mainshock_fault_tree_copy
 
-    def create_aftershocks_main_gate(self):
+    def create_aftershocks_main_gate(self,ssc_document):
 
         # Load aftershocks data and check if aftershocks are considered
         aftershocks_data = self.get_aftershocks_data(self.general_input)
@@ -223,46 +293,45 @@ class SeismicEvent:
 
 
 
-        aftershock_main_gate_temp_copies = {}
-
+        self.aftershocks_ft_templates = {}
         if consider_aftershocks == 'Yes':
             output_dir = "output"  # Name of the output directory
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-            cursor = self.ssc_seismic.find({})
-            for ssc_document in cursor:
 
-                room_id = str(ssc_document.get("room_id"))
-                ssc_name = str(ssc_document.get("name"))
-                ssc_mission = ssc_document.get("mission")
-                ssc_description = str(ssc_document.get("description"))
+            room_id = str(ssc_document.get("room_id"))
+            ssc_name = str(ssc_document.get("name"))
+            ssc_mission = ssc_document.get("mission")
+            ssc_description = str(ssc_document.get("description"))
 
-                aftershock_main_gate_temp_copy = copy.deepcopy(aftershock_main_gate_temp)
+            aftershock_main_gate_temp_copy = copy.deepcopy(aftershock_main_gate_temp)
 
-                # Add MSFT to NOMSFT
+            # Add MSFT to NOMSFT
+            mainshock_ft_temp = self.remove_object_ids(self.generate_mainshock_fault_tree(ssc_document))
+            self.update_inputs(aftershock_main_gate_temp_copy, "NOMSFT", mainshock_ft_temp)
 
-                self.update_inputs(aftershock_main_gate_temp_copy, "NOMSFT", self.mainshock_ft_templates[(room_id, ssc_name)])
+            self.replace_placeholders(aftershock_main_gate_temp_copy, room_id, ssc_name, ssc_description,
+                                      PGA_bin=None, PGA_bin_num=None, Time=None, Time_bin_num=None)
 
-                self.replace_placeholders(aftershock_main_gate_temp_copy, room_id, ssc_name, ssc_description,
-                                          PGA_bin=None, PGA_bin_num=None, Time=None, Time_bin_num=None)
+            for PGA_bin_num, PGA_bin in enumerate(MS_vector, start=1):
+                aftershock_main_gate = self.create_aftershock_MS_ft(aftershocks_data, ssc_document, PGA_bin_num,
+                                                                    PGA_bin)
+                self.add_aftershock_mainshock_gate(aftershock_main_gate_temp_copy, aftershock_main_gate)
+                self.remove_object_ids(aftershock_main_gate_temp_copy)
 
-                for PGA_bin_num, PGA_bin in enumerate(MS_vector, start=1):
-                    aftershock_main_gate = self.create_aftershock_MS_ft(aftershocks_data, ssc_document, PGA_bin_num,
-                                                                        PGA_bin)
-                    self.add_aftershock_mainshock_gate(aftershock_main_gate_temp_copy, aftershock_main_gate)
-                    self.remove_object_ids(aftershock_main_gate_temp_copy)
-                    key = f'{room_id}-{ssc_name}'
+                #self.aftershocks_ft_templates[(room_id, ssc_name)] = aftershock_main_gate_temp_copy
+        return aftershock_main_gate_temp_copy
 
-                    aftershock_main_gate_temp_copies[key] = aftershock_main_gate_temp_copy
 
-                # Create a unique JSON filename based on room_id and ssc_name
-                json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
+                #     aftershock_main_gate_temp_copies[key] = aftershock_main_gate_temp_copy
+                # # Create a unique JSON filename based on room_id and ssc_name
+                # json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
+                #
+                # # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
+                # with open(json_filename, 'w') as json_file:
+                #     json.dump(aftershock_main_gate_temp_copy, json_file, indent=4)
 
-                # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
-                with open(json_filename, 'w') as json_file:
-                    json.dump(aftershock_main_gate_temp_copy, json_file, indent=4)
-        return aftershock_main_gate_temp_copies
 
     def add_aftershock_mainshock_gate(self, json_obj, aftershock_mainshock_gate):
         # Find and update all elements with "id" equal to "ASGT"
@@ -535,14 +604,14 @@ def main():
 
     # Usage example
     tree = SeismicEvent(mongodb_uri, general_db_name)
-    mainshock_ft_template = tree.generate_mainshock_fault_tree()
-    aftershock_gate = tree.create_aftershocks_main_gate()
-    first_item = next(iter(aftershock_gate.values()))
+    seismic_tree = tree.create_seismic_fault_tree()
+
+    #first_item = next(iter(aftershock_gate.values()))
     # Assuming you want to create and visualize the tree using TreeBuilder
-    ft = TreeBuilder(mongodb_uri, general_db_name)
-    ft.build_tree(first_item)
+    #ft = TreeBuilder(mongodb_uri, general_db_name)
+    #ft.build_tree(first_item)
     # ft.visualize_tree()
-    ft.write_mard()
+    #ft.write_mard()
 
 
 if __name__ == "__main__":
