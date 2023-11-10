@@ -19,7 +19,7 @@ class SeismicEvent:
         self.aftershocks_ft_templates = {}
 
 
-    def create_seismic_fault_tree(self):
+    def create_seismic_fault_tree(self,ssc_document):
 
         output_dir = "output"
         aftershocks_data = self.get_aftershocks_data(self.general_input)
@@ -32,51 +32,54 @@ class SeismicEvent:
         if consider_aftershocks == "Yes":
 
 
-            # Add aftershocks fault tree to mainshock fault tree
-            for ssc_document in cursor:
-                aftershock_ft_temp=self.remove_object_ids(self.create_aftershocks_main_gate(ssc_document))
-                # Call the mainshock fault tree template
-                mainshock_ft_temp=self.remove_object_ids(self.generate_mainshock_fault_tree(ssc_document))
+        # Add aftershocks fault tree to mainshock fault tree
+            aftershock_ft_temp=self.remove_object_ids(self.create_aftershocks_main_gate(ssc_document))
+            # Call the mainshock fault tree template
+            mainshock_ft_temp=self.remove_object_ids(self.generate_mainshock_fault_tree(ssc_document))
 
-                room_id = str(ssc_document.get("room_id"))
-                ssc_name = str(ssc_document.get("name"))
-                main_seismic_fault_tree_copy = self.remove_object_ids(copy.deepcopy(self.aftershocks_ft.find_one({"id": "SFT"})))
-                #print(type(main_seismic_fault_tree_copy))
+            room_id = str(ssc_document.get("room_id"))
+            ssc_name = str(ssc_document.get("name"))
+            main_seismic_fault_tree_copy = self.remove_object_ids(copy.deepcopy(self.aftershocks_ft.find_one({"id": "SFT"})))
+            #print(type(main_seismic_fault_tree_copy))
 
-                #main_seismic_fault_tree_copy["inputs"]= aftershock_ft_temp
-                #main_seismic_fault_tree_copy["inputs"] = mainshock_ft_temp
-                main_seismic_fault_tree_copy["inputs"].append(aftershock_ft_temp)
-                main_seismic_fault_tree_copy["inputs"].append(mainshock_ft_temp)
-                # Create a unique JSON filename based on room_id and ssc_name
-                json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
+            #main_seismic_fault_tree_copy["inputs"]= aftershock_ft_temp
+            #main_seismic_fault_tree_copy["inputs"] = mainshock_ft_temp
+            main_seismic_fault_tree_copy["inputs"].append(aftershock_ft_temp)
+            main_seismic_fault_tree_copy["inputs"].append(mainshock_ft_temp)
+            # Create a unique JSON filename based on room_id and ssc_name
+            json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
 
-                # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
-                with open(json_filename, 'w') as json_file:
-                    json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
+            # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
+            with open(json_filename, 'w') as json_file:
+                json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
+
+            return main_seismic_fault_tree_copy
+
 
 
         else:
 
-            # Add aftershocks fault tree to mainshock fault tree
-            for ssc_document in cursor:
-                # Call the mainshock fault tree template
-                mainshock_ft_temp = self.remove_object_ids(self.generate_mainshock_fault_tree(ssc_document))
+        # Add aftershocks fault tree to mainshock fault tree
+            # Call the mainshock fault tree template
+            mainshock_ft_temp = self.remove_object_ids(self.generate_mainshock_fault_tree(ssc_document))
 
-                room_id = str(ssc_document.get("room_id"))
-                ssc_name = str(ssc_document.get("name"))
-                main_seismic_fault_tree_copy = self.remove_object_ids(
-                    copy.deepcopy(self.aftershocks_ft.find_one({"id": "SFT"})))
-                # print(type(main_seismic_fault_tree_copy))
+            room_id = str(ssc_document.get("room_id"))
+            ssc_name = str(ssc_document.get("name"))
+            main_seismic_fault_tree_copy = self.remove_object_ids(
+                copy.deepcopy(self.aftershocks_ft.find_one({"id": "SFT"})))
+            # print(type(main_seismic_fault_tree_copy))
 
-                # main_seismic_fault_tree_copy["inputs"]= aftershock_ft_temp
-                main_seismic_fault_tree_copy["inputs"] = mainshock_ft_temp
+            # main_seismic_fault_tree_copy["inputs"]= aftershock_ft_temp
+            main_seismic_fault_tree_copy["inputs"] = mainshock_ft_temp
 
-                # Create a unique JSON filename based on room_id and ssc_name
-                json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
+            # Create a unique JSON filename based on room_id and ssc_name
+            json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
 
-                # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
-                with open(json_filename, 'w') as json_file:
-                    json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
+            # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
+            with open(json_filename, 'w') as json_file:
+                json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
+
+            return main_seismic_fault_tree_copy
 
 
 
@@ -604,11 +607,17 @@ def main():
 
     # Usage example
     tree = SeismicEvent(mongodb_uri, general_db_name)
-    seismic_tree = tree.create_seismic_fault_tree()
+    ft_builder = TreeBuilder(mongodb_uri, general_db_name)
+
+    cursor = tree.ssc_seismic.find({})
+    for ssc_document in cursor:
+        seismic_tree = tree.create_seismic_fault_tree(ssc_document)
+        ft_builder.build_tree(seismic_tree)
+    ft_builder.visualize_tree()
 
     #first_item = next(iter(aftershock_gate.values()))
     # Assuming you want to create and visualize the tree using TreeBuilder
-    #ft = TreeBuilder(mongodb_uri, general_db_name)
+    #
     #ft.build_tree(first_item)
     # ft.visualize_tree()
     #ft.write_mard()
