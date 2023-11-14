@@ -235,8 +235,10 @@ class TreeBuilder:
             def collect_nodes(node):
                 if node.logic_type == "BE":
                     if node.name not in self.unique_BEI_names:
+                        print(node.node_type)
                         # Call write_bei_data method with file and node arguments
                         bei_writer.write_bei_data(node, f)
+
                         self.unique_BEI_names.add(node.name)
                 for child in node.children:
                     collect_nodes(child)

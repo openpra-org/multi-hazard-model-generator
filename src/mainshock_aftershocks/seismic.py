@@ -39,7 +39,9 @@ class SeismicEvent:
 
             room_id = str(ssc_document.get("room_id"))
             ssc_name = str(ssc_document.get("name"))
+            ssc_description = str(ssc_document.get("description"))
             main_seismic_fault_tree_copy = self.remove_object_ids(copy.deepcopy(self.aftershocks_ft.find_one({"id": "SFT"})))
+            self.replace_placeholders(main_seismic_fault_tree_copy,room_id,ssc_name,ssc_description,PGA_bin=None,Time=None,Time_bin_num=None,AF_bin_num=None)
             #print(type(main_seismic_fault_tree_copy))
 
             #main_seismic_fault_tree_copy["inputs"]= aftershock_ft_temp
@@ -153,7 +155,7 @@ class SeismicEvent:
 
                 for input in mainshock_gate_bin['inputs']:
                     if 'id' in input and input['id'] == 'MS-BE':
-                        input["failure_model_params"] = failure_model_params
+                        input["failure_model"] = failure_model_params
                         self.replace_placeholders(mainshock_gate_bin, room_id, ssc_name, ssc_description, ms_bin,
                                                   bin_num)
                         self.remove_object_ids(mainshock_gate_bin)
@@ -613,7 +615,9 @@ def main():
     for ssc_document in cursor:
         seismic_tree = tree.create_seismic_fault_tree(ssc_document)
         ft_builder.build_tree(seismic_tree)
-    ft_builder.visualize_tree()
+    #ft_builder.visualize_tree()
+    ft_builder.write_mard()
+
 
     #first_item = next(iter(aftershock_gate.values()))
     # Assuming you want to create and visualize the tree using TreeBuilder
