@@ -87,5 +87,8 @@ class BasicEventWriter:
 
 
     def write_bec_data(self,node,file):
-        if node.node_type == "Seismic-FT":
+        if node.node_type == "AFCE":
             pass
+
+
+

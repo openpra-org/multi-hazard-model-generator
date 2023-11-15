@@ -78,26 +78,22 @@ class BasicEventWriter:
         pass
 
 
-    def house_event_model(self,node,file):
-
+    def house_event_model(self, node, file):
         # Check if the node has the failure_model with distribution_type "SL"
-        if (
-                node.failure_model
-                and node.failure_model.get("distribution_type") == "SL"
-        ):
+        if node.failure_model and node.failure_model.get("state") :
             # Define the parameters based on the provided criteria
             name = node.name
-            FdT = "J"
-            UdC = ""
-            UdT = "S"
-            UdValue = node.failure_model.get("beta_r_uncertainty", "")
-            Prob = node.failure_model.get("median_seismic_acceleration", "")
-            Lambda = node.failure_model.get("pga", "")  # test this
+            FdT = node.failure_model.get("state")
+            UdC = "0.000E+000"
+            UdT = ""
+            UdValue =  "0.000E+000"
+            Prob =  "0.000E+000"
+            Lambda = "0.000E+000"
             Tau = "0.000E+000"
             Mission = "0.000E+000"
             Init = ""
             PF = ""
-            UdValue2 = node.failure_model.get("beta_u_uncertainty", "")
+            UdValue2 = "0.000E+000"
             Calc_Prob = ""
             Freq = ""
             Analysis_Type = "RANDOM"
@@ -108,12 +104,8 @@ class BasicEventWriter:
             file.write(
                 f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
             )
-
-
-
-
         else:
-            raise ValueError("Invalid distribution_type for seismic model")
+            raise ValueError("Invalid distribution_type for house event")
 
 
 
@@ -125,6 +117,8 @@ class BasicEventWriter:
             self.seismic_model(node, file)
         elif node.node_type == "Flood-Failure":
             self.flood_model(node, file)
+        elif node.node_type == "HE":
+            self.house_event_model(node,file)
         # Add more conditions for other node types
 
 

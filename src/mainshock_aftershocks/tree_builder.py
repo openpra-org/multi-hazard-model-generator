@@ -177,25 +177,25 @@ class TreeBuilder:
         output_dir = os.path.join(current_dir,  "output")
 
         filename = 'seismic_induced_fire.FTL'
-
-
+        ft_tree_file = "ft_tree_file.FTL"
         # Create directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
-        with open(os.path.join(output_dir, filename), 'a') as f:
-            first_node_name = self.tree.name
+        f = open(os.path.join(output_dir, filename), 'a')
+        ft_temp = open(os.path.join(output_dir, ft_tree_file), 'a')
+        current_file = f
+        first_node_name = self.tree.name
 
-            f.write(f"G-PWR, {first_node_name} =\n")
-            def write_node(node):
-                if node.node_type == "seismic_FT":
-                    f.write(f"{node.name}                           TRAN\n")
-                elif node.node_type in ("FT", "GT"):
-                    f.write(f"{node.name}                      ")
-                    f.write(f"{node.logic_type}  ")
-                    for child in node.children:
-                        f.write(f"{child.name}     ")
-                    f.write("\n")
-                    for child in node.children:
-                        write_node(child)
+        f.write(f"G-PWR, {first_node_name} =\n")
+        def write_node(node,is_FT = False):
+
+            if node.node_type in ("FT", "GT"):
+                f.write(f"{node.name}                      ")
+                f.write(f"{node.logic_type}  ")
+                for child in node.children:
+                    f.write(f"{child.name}     ")
+                f.write("\n")
+                for child in node.children:
+                    write_node(child)
 
             write_node(self.tree)
 

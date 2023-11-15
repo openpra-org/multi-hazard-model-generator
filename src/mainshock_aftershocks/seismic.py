@@ -485,7 +485,7 @@ class SeismicEvent:
                     aftershock_compound_event_gate_template = copy.deepcopy(
                         self.aftershocks_ft.find_one({"id": "ASCEGT"}))
 
-                    self.update_failure_model_value(aftershock_compound_event_gate_template, "AF-VE", "value",
+                    self.update_failure_model_value(aftershock_compound_event_gate_template, "AF-FE", "value",
                                                     mean_number_aftershocks)
 
                     self.replace_placeholders(aftershock_compound_event_gate_template, room_id, ssc_name,
@@ -615,7 +615,7 @@ def main():
     for ssc_document in cursor:
         seismic_tree = tree.create_seismic_fault_tree(ssc_document)
         ft_builder.build_tree(seismic_tree)
-    #ft_builder.visualize_tree()
+    ft_builder.visualize_tree()
     ft_builder.write_mard()
 
 
