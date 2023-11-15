@@ -80,7 +80,7 @@ class BasicEventWriter:
 
     def house_event_model(self, node, file):
         # Check if the node has the failure_model with distribution_type "SL"
-        if node.failure_model and node.failure_model.get("state") :
+        if node.failure_model and node.failure_model.get("state"):
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = node.failure_model.get("state")
@@ -107,21 +107,52 @@ class BasicEventWriter:
         else:
             raise ValueError("Invalid distribution_type for house event")
 
+    def compound_event_information_model(self, node, file):
 
+        if ( node.node_type == "ASCE"
+        ):
+            # Define the parameters based on the provided criteria
+            name = node.name
+            FdT = "C"
+            UdC = ""
+            UdT = "0"  # Change this to "T" for Flood distribution type
+            UdValue = "0"
+            Prob = "0"
 
+            Lambda = "0.00E+0"
+            Tau = "0.000E+000"
+            Mission = "0.000E+000"
+            Init = ""
+            PF = ""
+            UdValue2 = "0"
+            Calc_Prob = "0"
+            Freq = " "
+            Analysis_Type = "RANDOM"
+            Phase_Type = "CD"
+            Project = "G-PWR"
+
+            # Write the information to the file
+            file.write(
+                f"{name},         {FdT},   {UdC},   {UdT},  {UdValue},  {Prob},  {Lambda},  {Tau},  {Mission},  {Init},  {PF},  {UdValue2},  {Calc_Prob},  {Freq},  {Analysis_Type},  {Phase_Type}, {Project}\n"
+            )
+        else:
+            raise ValueError("Invalid compound event")
 
     def write_bei_data(self, node, file):
 
         if node.node_type == "SBE":
-
             self.seismic_model(node, file)
         elif node.node_type == "Flood-Failure":
             self.flood_model(node, file)
         elif node.node_type == "HE":
             self.house_event_model(node,file)
-        # Add more conditions for other node types
+        elif node.node_type == "ASCE":
+            self.compound_event_information_model(node,file)
 
 
-    def write_bec_data(self,node,file):
-        if node.node_type == "Seismic-FT":
-            pass
+
+
+
+
+
+

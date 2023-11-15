@@ -615,8 +615,8 @@ def main():
     for ssc_document in cursor:
         seismic_tree = tree.create_seismic_fault_tree(ssc_document)
         ft_builder.build_tree(seismic_tree)
-    ft_builder.visualize_tree()
-    ft_builder.write_mard()
+    #ft_builder.visualize_tree()
+    ft_builder.write_mard("seismic")
 
 
     #first_item = next(iter(aftershock_gate.values()))
