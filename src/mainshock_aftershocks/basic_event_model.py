@@ -77,6 +77,37 @@ class BasicEventWriter:
         # Write BEI for HRA model here
         pass
 
+    def value_event_model(self, node, file):
+        if (
+                node.failure_model
+                and node.failure_model.get("id") == "V"
+                and node.node_type == "ASFE"
+        ):
+            # Define the parameters based on the provided criteria
+            name = node.name
+            FdT = node.failure_model.get("id")
+            UdC = "0.000E+000"
+            UdT = ""
+            UdValue = "0.000E+000"
+            Prob = node.failure_model.get("value")
+            Lambda = "0.000E+000"
+            Tau = "0.000E+000"
+            Mission = "0.000E+000"
+            Init = ""
+            PF = ""
+            UdValue2 = "0.000E+000"
+            Calc_Prob = node.failure_model.get("value")
+            Freq = ""
+            Analysis_Type = "RANDOM"
+            Phase_Type = "CD"
+            Project = "G-PWR"
+
+            # Write the information to the file
+            file.write(
+                f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
+            )
+        else:
+            raise ValueError("Invalid distribution_type for value event")
 
     def house_event_model(self, node, file):
         # Check if the node has the failure_model with distribution_type "SL"
@@ -148,6 +179,8 @@ class BasicEventWriter:
             self.house_event_model(node,file)
         elif node.node_type == "ASCE":
             self.compound_event_information_model(node,file)
+        elif node .node_type == "ASFE":
+            self.value_event_model(node,file)
 
 
 
