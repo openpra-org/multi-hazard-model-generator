@@ -257,7 +257,7 @@ class TreeBuilder:
             def traverse_node(node, file, is_ft=False):
                 if is_ft:
                     file.write("^EOS\n")
-                    file.write(f"G-PWR    {node.name}  = \n")
+                    file.write(f"G-PWR ,   {node.name}  = \n")
                 file.write(f"{node.name}                      {node.logic_type}  ")
                 file.write(" ".join(child.name for child in node.children))
                 file.write("\n")
