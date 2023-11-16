@@ -26,6 +26,8 @@ class TreeBuilder:
         self.unique_ft_names = set()
         self.unique_BED_names = set()
         self.unique_BEI_names = set()
+        self.g_pwr_written_ftd = False
+        self.g_pwr_written_gtd = False
 
     def build_tree(self, data):
         self.tree = self._build_node(data)
@@ -176,7 +178,7 @@ class TreeBuilder:
         for child in node.children:
             self.print_tree(child, level + 1)
 
-    def write_gtd(self,file_name):
+    def write_gtd(self, file_name):
         """Append gate descriptions to an existing .GTD file"""
         # Get current file directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -193,11 +195,16 @@ class TreeBuilder:
         file_path = os.path.join(output_dir, file_name + '.GTD')
 
         with open(file_path, 'a') as f:
+            # Check if "G-PWR =" has been written
+            if not self.g_pwr_written_gtd:
+                f.write("G-PWR  =\n")
+                # Set the flag to True after writing
+                self.g_pwr_written_gtd = True
 
             def collect_gates(node):
                 if node.node_type == "GT":
                     if node.name not in self.unique_gate_names:
-                        f.write(f"{node.name},{node.description}, G-PWR\n")
+                        f.write(f"{node.name},{node.description}, , G-PWR\n")
                         self.unique_gate_names.add(node.name)
                 for child in node.children:
                     collect_gates(child)
@@ -205,16 +212,15 @@ class TreeBuilder:
             collect_gates(self.tree)
 
 
-    def write_ftd(self,file_name):
+    def write_ftd(self, file_name):
         """Append gate descriptions to an existing .GTD file"""
         # Get current file directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
         # Construct output directory
-        output_dir = os.path.join(current_dir,  "output/MARD")
+        output_dir = os.path.join(current_dir, "output/MARD")
 
-
-        # fault tree file name
+        # Fault tree file name
         filename = os.path.join(output_dir, file_name + '.FTD')
         # Create directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
@@ -223,21 +229,25 @@ class TreeBuilder:
         file_path = os.path.join(output_dir, filename)
 
         with open(file_path, 'a') as f:
+            # Check if "G-PWR  =" has been written
+            if not self.g_pwr_written_ftd:
+                f.write("G-PWR  =  \n")
+                # Set the flag to True after writing
+                self.g_pwr_written_ftd = True
 
             def collect_ft(node):
                 if node.node_type == "FT":
                     if node.name not in self.unique_ft_names:
-                        f.write(f"{node.name},{node.description},S , ,G-PWR\n")
+                        f.write(f"{node.name},{node.description} , , ,  , G-PWR\n")
                         self.unique_ft_names.add(node.name)
                 for child in node.children:
                     collect_ft(child)
-
 
             collect_ft(self.tree)
 
     def write_ftl(self, file_name):
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        output_dir = os.path.join(current_dir, "output")
+        output_dir = os.path.join(current_dir, "output/MARD")
         filename = os.path.join(output_dir, file_name + '.FTL')
 
         ft_tree_file = "ft_tree_file.FTL"
