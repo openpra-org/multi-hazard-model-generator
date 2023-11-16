@@ -1,8 +1,9 @@
 from src.imports import *
 from basic_event_model import BasicEventWriter
+from collections import deque
 
 class Node:
-    def __init__(self, logic_type, description, node_type,name,failure_model=None,library = None,procedure = None):
+    def __init__(self, logic_type, description, node_type,name,failure_model=None,library = None,procedure = None,id = None):
         self.logic_type = logic_type
         self.description = description
         self.node_type = node_type
@@ -10,16 +11,17 @@ class Node:
         self.failure_model = failure_model
         self.library = library
         self.procedure = procedure
+        self.id = id
 
         self.children = []
 
+    def add_child(self, child_node):
+        self.children.append(child_node)
+
 
 class TreeBuilder:
-    def __init__(self,mongodb_uri,db_name):
+    def __init__(self):
         self.tree = None
-        self.client = MongoClient(mongodb_uri)
-        self.db = self.client[db_name]
-        self.general_input_collection = self.db["General_Input"]
         self.unique_gate_names = set()
         self.unique_ft_names = set()
         self.unique_BED_names = set()
@@ -41,8 +43,9 @@ class TreeBuilder:
         failure_model = node_data.get("failure_model")  # Failure model is optional
         libray = node_data.get("library")
         procedure = node_data.get("procedure")
+        id  = node_data.get("id")
 
-        node = Node(logic_type, description, node_type, name, failure_model,libray,procedure)
+        node = Node(logic_type, description, node_type, name, failure_model,libray,procedure,id)
 
         if "inputs" in node_data:
             inputs = node_data["inputs"]
@@ -65,6 +68,34 @@ class TreeBuilder:
 
         return node
 
+    def convert_dict_to_tree(self, node_data):
+        logic_type = node_data.get("logic_type")
+        if logic_type is None or node_data.get("name") is None:
+            return None
+
+        description = node_data.get("description")
+        node_type = node_data.get("type")
+        name = node_data.get("name")
+        failure_model = node_data.get("failure_model")
+        library = node_data.get("library")
+        procedure = node_data.get("procedure")
+        id = node_data.get("id")
+
+        node = Node(logic_type, description, node_type, name, failure_model, library, procedure, id)
+
+        if "inputs" in node_data:
+            inputs = node_data["inputs"]
+            if isinstance(inputs, list):
+                for input_node_data in inputs:
+                    input_node = self.convert_dict_to_tree(input_node_data)
+                    if input_node:
+                        node.add_child(input_node)
+            elif isinstance(inputs, dict):
+                input_node = self.convert_dict_to_tree(inputs)
+                if input_node:
+                    node.add_child(input_node)
+
+        return node
     def create_graph(self, node=None, graph=None, added_edges=None):
         if node is None:
             node = self.tree
@@ -108,6 +139,33 @@ class TreeBuilder:
         img_path = os.path.abspath("seismic_fire_fault_tree.png")
         img = Image.open(img_path)
         img.show()
+
+    def extract_subtree(self, tree, mongodb_uri=None, db_name=None):
+        new_tree = TreeBuilder( )
+        new_tree.tree = self._extract_subtree(tree.tree)
+        return new_tree
+
+    def _extract_subtree(self, node):
+        if not node or (not node.children) or (node.node_type == "FT"):
+            return Node(node_type=node.node_type, name=node.name)
+
+        new_node = Node(
+            node_type=node.node_type,
+            name=node.name,
+            logic_type=node.logic_type,
+            description=node.description,
+            failure_model=node.failure_model,
+            library=node.library,
+            procedure=node.procedure,
+            id=node.id,
+        )
+
+        for child in node.children:
+            new_child = self._extract_subtree(child)
+            if new_child:
+                new_node.children.append(new_child)
+
+        return new_node
 
     def print_tree(self, node=None, level=0):
         if node is None:
@@ -174,68 +232,64 @@ class TreeBuilder:
                 for child in node.children:
                     collect_ft(child)
 
+
             collect_ft(self.tree)
 
-    def write_ftl(self,file_name):
+    def write_ftl(self, file_name):
         current_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # Construct output directory
-        output_dir = os.path.join(current_dir, "output/MARD")
-
+        output_dir = os.path.join(current_dir, "output")
         filename = os.path.join(output_dir, file_name + '.FTL')
-        ft_tree_file = "ft_tree_file.FTL"
-        ft_temp_path = os.path.join(output_dir, ft_tree_file)
 
-        # Create directory if it doesn't exist
+        ft_tree_file = "ft_tree_file.FTL"
+
         os.makedirs(output_dir, exist_ok=True)
 
-        with open(os.path.join(output_dir, filename), 'w') as main_file, \
-             open(ft_temp_path, 'w') as ft_temp:
+        # Store the contents of ft_temp
+        ft_temp_contents = None
 
+        with open(os.path.join(output_dir, filename), 'w') as f, open(os.path.join(output_dir, ft_tree_file),
+                                                                      'w') as ft_temp:
             first_node_name = self.tree.name
-            main_file.write(f"G-PWR, {first_node_name} =\n")
+            f.write(f"G-PWR, {first_node_name} =\n")
 
-            def write_node(node, has_ft_parent=False, is_root_node=False):
-                nonlocal ft_temp
+            ft_queue = deque()
 
-                if node.node_type in ("FT", "GT"):
+            def traverse_node(node, file, is_ft=False):
+                if is_ft:
+                    file.write("^EOS\n")
+                    file.write(f"G-PWR    {node.name}  = \n")
+                file.write(f"{node.name}                      {node.logic_type}  ")
+                file.write(" ".join(child.name for child in node.children))
+                file.write("\n")
 
-                    if (node.node_type == "FT" and not is_root_node) or (has_ft_parent and not is_root_node):
-                        if node.node_type == "FT":
-                            if has_ft_parent:
-                                ft_temp.write(f"{node.name}        TRAN\n")
-                            else:
-                                main_file.write(f"{node.name}        TRAN\n")
-                            ft_temp.write("^EOS\n")
+                for child in node.children:
+                    if child.node_type == "FT":
+                        file.write(f"{child.name}        TRAN\n")
+                        ft_queue.append(child)
+                    elif child.node_type == "GT":
+                        traverse_node(child, file)
 
+            traverse_node(self.tree, f, is_ft=False)
 
+            while ft_queue:
+                node = ft_queue.popleft()
+                traverse_node(node, ft_temp, is_ft=True)
 
-                        curr_file = ft_temp
-                        has_ft_parent = True
-                    else:
-                        curr_file = main_file
-                        has_ft_parent = False
-                    curr_file.write(f"G-PWR, {node.name} =\n")
-                    curr_file.write(f"{node.name}                      ")
-                    curr_file.write(f"{node.logic_type}  ")
-                    curr_file.write('     '.join(child.name for child in node.children))
-                    curr_file.write("\n")
-
-                    for child in node.children:
-                        write_node(child, has_ft_parent=has_ft_parent, is_root_node=False)
-
-            write_node(self.tree, is_root_node=True)
-
-            # close, save, and copy temp_ft to main file f
             ft_temp.write("^EOS\n")
 
-            # Copy temp_ft to main file
-            ft_temp.close()  # Close ft_temp after writing
-            with open(ft_temp_path, 'r') as ft_temp_read:
-                main_file.writelines(ft_temp_read.readlines())
 
-        # Remove temp_ft
-        os.remove(ft_temp_path)
+        # Now, read the contents of ft_temp before it's closed
+        with open(os.path.join(output_dir, ft_tree_file), 'r') as ft_temp:
+            ft_temp_contents = ft_temp.read()
+
+        # Now, write the contents of ft_temp_contents to f
+        if ft_temp_contents:
+            with open(os.path.join(output_dir, filename), 'a') as f:
+                f.write(ft_temp_contents)
+
+        # Remove temp file
+        os.remove(os.path.join(output_dir, ft_tree_file))
+
     def write_bed(self,file_name):
         """Append Basic Event Descriptions (BED) to an existing file for nodes with logic_type == 'BE'"""
         current_dir = os.path.dirname(os.path.abspath(__file__))

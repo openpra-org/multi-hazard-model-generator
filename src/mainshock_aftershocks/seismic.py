@@ -609,22 +609,25 @@ def main():
 
     # Usage example
     tree = SeismicEvent(mongodb_uri, general_db_name)
-    ft_builder = TreeBuilder(mongodb_uri, general_db_name)
+    ft_builder = TreeBuilder()
 
     cursor = tree.ssc_seismic.find({})
     for ssc_document in cursor:
         seismic_tree = tree.create_seismic_fault_tree(ssc_document)
         ft_builder.build_tree(seismic_tree)
-    #ft_builder.visualize_tree()
+        # Assuming seismic_tree is a dictionary, you might need to modify the line above
+
+    # ft_builder.visualize_tree()
     ft_builder.write_mard("seismic")
 
+    # Create a TreeBuilder instance from the seismic_tree dictionary
+    seismic_tree_builder = TreeBuilder()
 
-    #first_item = next(iter(aftershock_gate.values()))
-    # Assuming you want to create and visualize the tree using TreeBuilder
-    #
-    #ft.build_tree(first_item)
-    # ft.visualize_tree()
-    #ft.write_mard()
+    #seismic_tree_builder.tree = seismic_tree_builder.convert_dict_to_tree(seismic_tree)
+    # Extract the subtree using the correct instance
+    #subtree_builder = seismic_tree_builder.extract_subtree(seismic_tree)
+    #subtree = subtree_builder.tree
+
 
 
 if __name__ == "__main__":
