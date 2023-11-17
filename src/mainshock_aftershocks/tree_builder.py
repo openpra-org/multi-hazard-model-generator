@@ -264,17 +264,26 @@ class TreeBuilder:
 
             ft_queue = deque()
             fault_tree_dict = {}
+            fault_tree_TRAN_dict = {}
+
             def traverse_node(node, file, is_ft=False):
+
                 if is_ft:
                     file.write("^EOS\n")
                     file.write(f"G-PWR ,   {node.name}  = \n")
+                    fault_tree_TRAN_dict.clear()
+
+
+
                 file.write(f"{node.name}                      {node.logic_type}  ")
                 file.write(" ".join(child.name for child in node.children))
                 file.write("\n")
 
                 for child in node.children:
-                    if child.node_type == "FT":
+                    if child.node_type == "FT" and child.name not in fault_tree_TRAN_dict:
                         file.write(f"{child.name}        TRAN\n")
+                        fault_tree_TRAN_dict[child.name] = child
+
                         if child.name not in fault_tree_dict:
                             ft_queue.append(child)
                             fault_tree_dict[child.name] = child
