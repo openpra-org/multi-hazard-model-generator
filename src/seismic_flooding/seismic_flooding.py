@@ -1,9 +1,10 @@
 
-from tree_builder import TreeBuilder
+from src.mainshock_aftershocks.tree_builder import TreeBuilder
 from src.imports import *
+from src.mainshock_aftershocks.seismic import SeismicEvent
 
 class SeismicFloodingFaultTree:
-    def __init__(self, mongodb_uri, db_name):
+    def __init__(self, mongodb_uri, db_name,seismic_event_instance):
         self.client = MongoClient(mongodb_uri)
         self.db = self.client[db_name]
         self.ssc_seismic_flood = self.db["components"]
@@ -16,6 +17,7 @@ class SeismicFloodingFaultTree:
         self.flood_barriers_collection = self.db["flood_barriers"]
         self.flooding_propagation_events = self.db["flooding_propagation"]
         self.ssc_fault_tree_template =  self.db["ssc_ft_temp"]
+        self.seismic_event_instance = seismic_event_instance
 
         self.flood_room_gate_representations = {}  # Dictionary to store flood room gate_json_representation by room_id
         self.propagation_from_one_room_representation = {}  # Dictionary to store flood propagation from one room gate_json_representation by room_id
@@ -182,7 +184,7 @@ class SeismicFloodingFaultTree:
             # Add HRA events
             self.add_hra_events(template_flood_room_gate_json, room_id)
             # Add sources of flooding events
-            self.add_sources_of_flooding(template_flood_room_gate_json, self.sources_collection, room_id)
+            self.add_sources_of_flooding(template_flood_room_gate_json, self.sources_collection, room_id,room_name)
 
             # Remove ObjectId values from the JSON representation
             gate_json_representation = self.remove_object_ids(template_flood_room_gate_json)
@@ -299,15 +301,42 @@ class SeismicFloodingFaultTree:
                     json_obj[key] = self.get_flood_gate_by_room_id(room_id)
         return json_obj
 
+    def create_flood_barrier_gate(self, room_id,room_num):
+        # Convert room_id_str to ObjectId
+
+        # Copy the collapse of the flood barrier gate
+        flood_barrier_collapse_gate = copy.deepcopy(self.flood_barriers_collection.find_one({"id": "FLDBAR"}))
+        # Find the barrier seismic info associated with the room_id
+        seismic_collapse_barrier_info = copy.deepcopy(
+            self.flood_barriers_collection.find_one({"type": "SBE", "room_id": ObjectId(room_id)}))
+
+        # Create a seismic fault tree for that denotes the seismic collapse of the flood barrier
+        seismic_fault_tree_barrier = self.seismic_event_instance.create_seismic_fault_tree(seismic_collapse_barrier_info)
+        self.replace_placeholders(seismic_fault_tree_barrier, room_id, room_num,
+                                  seismic_collapse_barrier_info.get("name"),
+                                  seismic_collapse_barrier_info.get("description"))
+        # Append the seismic collapse of barrier fault tree to the collapse of flood barrier gate
+        flood_barrier_collapse_gate["inputs"].append( seismic_fault_tree_barrier)
+
+
+        # Find the barrier pressure collapse info associated with the room_id
+        pressure_collapse_barrier_info = copy.deepcopy(self.flood_barriers_collection.find_one({"type": "FLD_LN", "room_id":  ObjectId(room_id)}))
+        flood_barrier_collapse_gate["inputs"].append(pressure_collapse_barrier_info)
+        self.replace_placeholders(flood_barrier_collapse_gate,room_id,room_num,seismic_collapse_barrier_info.get("name"),seismic_collapse_barrier_info.get("description"))
+        # Append the pressure collapse of barrier fault tree to the collapse of flood barrier gate
+        return flood_barrier_collapse_gate
 
     def add_flood_barrier_collapse(self, json_obj, room_id,room_num):
+
+        # Create a flood barrier collapse gate
+        flood_barrier_collapse_gate=self.create_flood_barrier_gate(room_id,room_num)
+
         for index, input in enumerate(json_obj['inputs']):
             new_input = input
             # Check if the input has 'id' equal to 'CFB'
             if 'id' in input and input['id'] == 'CFB':
                 # Try to find the flood barrier document
-                new_input = self.flood_barriers_collection.find_one({"room_id": ObjectId(room_id)},
-                                                                      {'room_id': 0, '_id': 0})
+                new_input = flood_barrier_collapse_gate
                 if new_input:
                     # If the document exists, update the 'room_id' field
                     new_input['room_id'] = room_id
@@ -318,7 +347,7 @@ class SeismicFloodingFaultTree:
         for key, value in json_obj.items():
             if key == "id" and value == "CFB":
                 # Look for the flood barrier document with the matching room_id
-                barrier_doc = self.flood_barriers_collection.find_one({"room_id": ObjectId(room_id)})
+                barrier_doc = flood_barrier_collapse_gate
                 if barrier_doc:
                     json_obj[key] = barrier_doc
                 else:
@@ -330,7 +359,7 @@ class SeismicFloodingFaultTree:
         for index, input in enumerate(json_obj['inputs']):
             #print(input
             new_input = input
-            if 'id' in input and input['id'] == 'Flood_HRA':
+            if 'id' in input and input['id'] == 'FLD_HRA':
                 new_input = ((self.flooding_HRA_collection.find_one({"room_id": ObjectId(room_id)}, {'room_id': 0,'_id': 0})))
                 new_input['room_id'] = room_id
                 json_obj['inputs'][index] = new_input
@@ -338,15 +367,28 @@ class SeismicFloodingFaultTree:
 
 
         for key, value in json_obj.items():
-            if key == "id" and value == "Flood_HRA":
+            if key == "id" and value == "FLD_HRA":
                 # Look for the HRA document with the matching room_id
                 hra_document = self.flooding_HRA_collection.find_one({"room_id": ObjectId(room_id)})
                 json_obj[key] = hra_document
         return json_obj
 
-    def add_sources_of_flooding(self, json_obj, sources_collection, room_id):
+    def add_sources_of_flooding(self, json_obj, sources_collection, room_id,room_name):
         # Fetch SOFR documents from the MongoDB collection
         sofr_documents = list(sources_collection.find({"room_id": ObjectId(room_id)}))
+
+        # Create a list to store seismic_fault_tree documents
+        seismic_fault_trees = []
+
+        # Iterate over SOFR documents and call create_seismic_fault_tree
+        for sofr_document in sofr_documents:
+            # Call create_seismic_fault_tree for each document
+            seismic_fault_tree = self.seismic_event_instance.create_seismic_fault_tree(sofr_document)
+            self.replace_placeholders(seismic_fault_tree, room_id, room_name,
+                                      sofr_document.get("name"),
+                                      sofr_document.get("description"))
+            # Append the seismic_fault_tree to the list
+            seismic_fault_trees.append(seismic_fault_tree)
 
         # Find dictionaries within SFR_doc that contain "id": "SOFR" and update them
         if "inputs" in json_obj:
@@ -356,9 +398,8 @@ class SeismicFloodingFaultTree:
                     if "inputs" not in input_obj:
                         input_obj["inputs"] = []
 
-                    # Append SOFR documents from the fetched list
-                    input_obj["inputs"].extend(sofr_documents)
-
+                    # Extend inputs with seismic_fault_trees
+                    input_obj["inputs"].extend(seismic_fault_trees)
 
         # Return the updated SFR_doc
         return json_obj
@@ -465,6 +506,48 @@ class SeismicFloodingFaultTree:
 
         return node_data
 
+    def update_inputs(self, mongodb_document, target_id, new_objects):
+        found_object, path_to_object = self.find_object_by_id(mongodb_document, target_id)
+
+        if found_object:
+
+            # Check if the found object has "inputs" and ensure it's a list
+            if "inputs" in found_object and isinstance(found_object["inputs"], list):
+                # Append the new objects to the "inputs" list
+                found_object["inputs"].append(new_objects)
+                # Update the original document with the modified "inputs"
+                current_object = mongodb_document
+                for step in path_to_object[:-1]:
+                    current_object = current_object[step]
+                current_object[path_to_object[-1]] = found_object
+
+                # Return the updated document
+                return mongodb_document
+
+        return None  # Return None if the target_id is not found or if "inputs" is not a list
+
+
+    def find_object_by_id(self, document, target_id, path=None):
+        if path is None:
+            path = []
+
+        if isinstance(document, list):
+            for index, item in enumerate(document):
+                new_path = path + [index]
+                result, result_path = self.find_object_by_id(item, target_id, new_path)
+                if result:
+                    return result, result_path
+        elif isinstance(document, dict):
+            if "id" in document and document["id"] == target_id:
+                return document, path
+            for key, value in document.items():
+                new_path = path + [key]
+                result, result_path = self.find_object_by_id(value, target_id, new_path)
+                if result:
+                    return result, result_path
+
+
+        return None, []
 
 # Custom JSON Encoder to handle ObjectId
 class JSONEncoder(json.JSONEncoder):
@@ -473,20 +556,26 @@ class JSONEncoder(json.JSONEncoder):
             return str(o)  # Convert ObjectId to its string representation
         return super(JSONEncoder, self).default(o)
 
+
+
+
 def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/'
     flood_db_name = 'seismic_flooding_database'
     general_db_name = 'MultiHazards_PRA_General'
 
+    seismic_event_instance = SeismicEvent(mongodb_uri, general_db_name)
+
     # Usage example
-    tree = SeismicFloodingFaultTree(mongodb_uri, flood_db_name)
+    tree = SeismicFloodingFaultTree(mongodb_uri, flood_db_name,seismic_event_instance)
     tree.flood_room_gate()  # This method doesn't return anything, so no need to pass it to scan_json_for_id
     tree.propagation_from_one_room_gate()
     tree.propagation_to_room()
-    ft = TreeBuilder(mongodb_uri, general_db_name)
+    ft = TreeBuilder()
 
     json_fault_trees = [tree.ssc_fault_tree()["CMP-7"], tree.ssc_fault_tree()["CMP-17"]]
     for json_fault_tree in json_fault_trees:
+        print(json_fault_tree)
         # Applying the seismic_flooding_fault_tree class on seismic-induced flooding fault tree json object
         ft.build_tree(json_fault_tree)
 
@@ -494,8 +583,8 @@ def main():
         #ft.print_tree(ft.tree)
 
         # Visualize the tree
-        ft.visualize_tree()
+        #ft.visualize_tree()
 
-        ft.write_mard()
+        ft.write_mard("seismic_induced_flooding")
 if __name__ == "__main__":
     main()

@@ -7,7 +7,6 @@ class SeismicEvent:
         self.client = MongoClient(mongodb_uri)
         self.db = self.client[db_name]
 
-        self.ssc_seismic = self.db["components"]
         self.general_input = self.db["General_Input"]
         self.mainshock_ft = self.db["mainshock_ft"]
         self.aftershocks_ft = self.db["aftershocks_ft"]
@@ -24,7 +23,6 @@ class SeismicEvent:
         output_dir = "output"
         aftershocks_data = self.get_aftershocks_data(self.general_input)
 
-        cursor = self.ssc_seismic.find({})
         self.mainshock_ft_templates = {}
         consider_aftershocks = aftershocks_data.get('consider_aftershocks')
 
@@ -52,8 +50,8 @@ class SeismicEvent:
             json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
 
             # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
-            with open(json_filename, 'w') as json_file:
-                json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
+            # with open(json_filename, 'w') as json_file:
+            #     json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
 
             return main_seismic_fault_tree_copy
 
@@ -595,12 +593,18 @@ def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net'
     general_db_name = 'MultiHazards_PRA_General'
 
-    # Usage example
-    tree = SeismicEvent(mongodb_uri, general_db_name)
-    ft_builder = TreeBuilder()
 
-    cursor = tree.ssc_seismic.find({})
+
+    client = MongoClient(mongodb_uri)
+    db = client[general_db_name]
+
+    cursor = db["components"].find({})
+
+
     for ssc_document in cursor:
+        # Usage example
+        tree = SeismicEvent(mongodb_uri, general_db_name)
+        ft_builder = TreeBuilder()
         seismic_tree = tree.create_seismic_fault_tree(ssc_document)
         ft_builder.build_tree(seismic_tree)
         # Assuming seismic_tree is a dictionary, you might need to modify the line above

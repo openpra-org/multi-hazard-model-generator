@@ -39,9 +39,9 @@ class TreeBuilder:
         if logic_type is None or node_data.get("name") is None:
             return None
 
-        description = node_data.get("description")
+        description = node_data.get("description").upper()
         node_type = node_data.get("type")
-        name = node_data.get("name")
+        name = node_data.get("name").upper()
         failure_model = node_data.get("failure_model")  # Failure model is optional
         libray = node_data.get("library")
         procedure = node_data.get("procedure")
@@ -75,7 +75,7 @@ class TreeBuilder:
         if logic_type is None or node_data.get("name") is None:
             return None
 
-        description = node_data.get("description")
+        description = node_data.get("description").upper()
         node_type = node_data.get("type")
         name = node_data.get("name")
         failure_model = node_data.get("failure_model")
@@ -153,9 +153,9 @@ class TreeBuilder:
 
         new_node = Node(
             node_type=node.node_type,
-            name=node.name,
+            name=node.name.upper(),
             logic_type=node.logic_type,
-            description=node.description,
+            description=node.description.upper(),
             failure_model=node.failure_model,
             library=node.library,
             procedure=node.procedure,
@@ -347,7 +347,6 @@ class TreeBuilder:
             def collect_nodes(node):
                 if node.logic_type == "BE":
                     if node.name not in self.unique_BEI_names:
-                        print(node.node_type)
                         # Call write_bei_data method with file and node arguments
                         bei_writer.write_bei_data(node, f)
 
@@ -388,6 +387,7 @@ class TreeBuilder:
                         write_node(child, first_child=i == 0)
 
             write_node(self.tree)
+
 
     def write_mard(self, file_name):
         output_dir = "output"

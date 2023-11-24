@@ -74,7 +74,7 @@ class BasicEventWriter:
             raise ValueError("Invalid distribution_type for flood model")
 
     def HRA_model(self, node):
-        # Write BEI for HRA model here
+
         pass
 
 
