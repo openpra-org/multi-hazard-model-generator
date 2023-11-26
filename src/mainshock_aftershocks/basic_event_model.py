@@ -36,62 +36,38 @@ class BasicEventWriter:
 
 
 
-
         else:
             raise ValueError("Invalid distribution_type for seismic model")
 
     def flood_model(self, node, file):
         # Check if the node has the failure_model with distribution_type "FL"
-        if (
-                node.failure_model
-                and node.failure_model.get("distribution_type") == "FL"
-        ):
+        failure_model = node.failure_model
+
+        if failure_model and failure_model.get("distribution_type") == "FL":
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = "J"
             UdC = ""
-            UdT = "S"
-            UdValue = node.failure_model.get("beta_r_uncertainty", "")
-            Prob = node.failure_model.get("flood_level", "")
-            Lambda = node.failure_model.get("median_flood_depth", "")  # Rename this
+            UdT = "S"  # Change this to "T" for Flood distribution type
+
+            # Check and retrieve values from failure_model, raising ValueError if any are None
+            UdValue = failure_model.get("beta_r_uncertainty")
+            Prob = failure_model.get("median_flood_depth")
+            Lambda = failure_model.get("flood_level")
+
+            # Check for None values and raise ValueError with detailed error message
+            if None in (UdValue, Prob, Lambda):
+                error_params = [param for param, value in
+                                [("beta_r_uncertainty", UdValue), ("median_flood_depth", Prob), ("flood_level", Lambda)]
+                                if value is None]
+                raise ValueError(
+                    f"Some parameters in failure_model are None for node '{name}' with description '{node.description}': {error_params}")
+
             Tau = "0.000E+000"
             Mission = "0.000E+000"
             Init = ""
             PF = ""
-            UdValue2 = node.failure_model.get("beta_u_uncertainty", "")
-            Calc_Prob = ""
-            Freq = ""
-            Analysis_Type = "RANDOM"
-            Phase_Type = "CD"
-            Project = "G-PWR"
-
-            # Write the information to the file
-            file.write(
-                f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
-            )
-
-        else:
-            raise ValueError("Invalid distribution_type for flood failure model")
-
-    def flood_model(self, node, file):
-        # Check if the node has the failure_model with distribution_type "FL"
-        if (
-            node.failure_model
-            and node.failure_model.get("distribution_type") == "FL"
-        ):
-            # Define the parameters based on the provided criteria
-            name = node.name
-            FdT = "J"
-            UdC = ""
-            UdT = "T"  # Change this to "T" for Flood distribution type
-            UdValue = node.failure_model.get("beta_r_uncertainty", "")
-            Prob = node.failure_model.get("median_flood_depth", "")  # Change this to "median_flood_depth"
-            Lambda = node.failure_model.get("flood_level", "")
-            Tau = "0.000E+000"
-            Mission = "0.000E+000"
-            Init = ""
-            PF = ""
-            UdValue2 = node.failure_model.get("beta_u_uncertainty", "")
+            UdValue2 = failure_model.get("beta_u_uncertainty")
             Calc_Prob = ""
             Freq = ""
             Analysis_Type = "RANDOM"
@@ -103,9 +79,8 @@ class BasicEventWriter:
                 f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
             )
         else:
-            raise ValueError("Invalid distribution_type for flood model")
-
-
+            raise ValueError(
+                f"Invalid distribution_type for flood model or failure_model is None for node '{node.name}' with description '{node.description}'")
 
     def value_event_model(self, node, file):
         if (
@@ -233,19 +208,32 @@ class BasicEventWriter:
             raise ValueError("Invalid compound event")
 
     def write_bei_data(self, node, file):
+        print("write_bei_data accessed")
+        print(f"Node Type: {node.node_type}")
 
         if node.node_type == "SBE":
+            print("SBE branch")
             self.seismic_model(node, file)
         elif node.node_type == "HE":
-            self.house_event_model(node,file)
+            print("HE branch")
+            self.house_event_model(node, file)
         elif node.node_type == "ASCE":
-            self.compound_event_information_model(node,file)
+            print("ASCE branch")
+            self.compound_event_information_model(node, file)
         elif node.node_type == "ASFE":
-            self.value_event_model(node,file)
+            print("ASFE branch")
+            self.value_event_model(node, file)
         elif node.node_type == "FLD_LN":
-            self.flood_model(node,file)
+            print("FLD_LN branch")
+            self.flood_model(node, file)
         elif node.node_type == "FLD_HRA":
-            self.HRA_event_model(node,file)
+            print("FLD_HRA branch")
+            self.HRA_event_model(node, file)
+        else:
+            print("Other branch")
+
+    # ...
+
 
 
 

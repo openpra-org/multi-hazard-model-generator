@@ -1,5 +1,5 @@
 from src.imports import *
-from basic_event_model import BasicEventWriter
+from src.mainshock_aftershocks.basic_event_model import BasicEventWriter
 from collections import deque
 
 class Node:
@@ -178,15 +178,12 @@ class TreeBuilder:
         for child in node.children:
             self.print_tree(child, level + 1)
 
-    def write_gtd(self, file_name):
+    def write_gtd(self, file_name,output_dir):
         """Append gate descriptions to an existing .GTD file"""
-        # Get current file directory
-        current_dir = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.join(output_dir, "MARD")
         # Gate file name
         filename = 'seismic.GTD'
 
-        # Construct output directory
-        output_dir = os.path.join(current_dir, "output/MARD")
 
         # Create directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
@@ -212,13 +209,9 @@ class TreeBuilder:
             collect_gates(self.tree)
 
 
-    def write_ftd(self, file_name):
+    def write_ftd(self, file_name,output_dir):
         """Append gate descriptions to an existing .GTD file"""
-        # Get current file directory
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # Construct output directory
-        output_dir = os.path.join(current_dir, "output/MARD")
+        output_dir = os.path.join(output_dir, "MARD")
 
         # Fault tree file name
         filename = os.path.join(output_dir, file_name + '.FTD')
@@ -245,9 +238,8 @@ class TreeBuilder:
 
             collect_ft(self.tree)
 
-    def write_ftl(self, file_name):
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        output_dir = os.path.join(current_dir, "output/MARD")
+    def write_ftl(self, file_name,output_dir):
+        output_dir = os.path.join(output_dir, "MARD")
         filename = os.path.join(output_dir, file_name + '.FTL')
 
         ft_tree_file = "ft_tree_file.FTL"
@@ -312,10 +304,10 @@ class TreeBuilder:
         # Remove temp file
         os.remove(os.path.join(output_dir, ft_tree_file))
 
-    def write_bed(self,file_name):
+    def write_bed(self,file_name,output_dir):
         """Append Basic Event Descriptions (BED) to an existing file for nodes with logic_type == 'BE'"""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        output_dir = os.path.join(current_dir, "output/MARD")
+        # Construct output directory
+        output_dir = os.path.join(output_dir, "MARD")
         os.makedirs(output_dir, exist_ok=True)
         file_path = os.path.join(output_dir, file_name + '.BED')
 
@@ -331,12 +323,11 @@ class TreeBuilder:
 
             collect_nodes(self.tree)
 
-    def write_bei(self,file_name):
+    def write_bei(self,file_name,output_dir):
         """Append Basic Event Descriptions (BED) to an existing file for nodes with logic_type == 'BE'"""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        output_dir = os.path.join(current_dir, "output/MARD")
+        # Construct output directory
+        output_dir = os.path.join(output_dir, "MARD")
         os.makedirs(output_dir, exist_ok=True)
-
         file_path = os.path.join(output_dir, file_name + '.BEI')
 
         # Create an instance of BasicEventWriter
@@ -356,11 +347,10 @@ class TreeBuilder:
 
             collect_nodes(self.tree)
 
-    def write_bec(self,file_name):
-        current_dir = os.path.dirname(os.path.abspath(__file__))
+    def write_bec(self,file_name,output_dir):
 
         # Construct output directory
-        output_dir = os.path.join(current_dir, "output/MARD")
+        output_dir = os.path.join(output_dir,"MARD")
 
 
         bec_file = os.path.join(output_dir, file_name + '.BEC')
@@ -389,8 +379,9 @@ class TreeBuilder:
             write_node(self.tree)
 
 
-    def write_mard(self, file_name):
-        output_dir = "output"
+    def write_mard(self, file_name,current_dir):
+
+        output_dir = os.path.join(current_dir,"output")
         MARD_dir = "MARD"
         # List of filenames corresponding to the methods
         filenames = [file_name + ext for ext in ['.GTD', '.FTD', '.BED', '.BEI', '.FTL', '.BEC']]
@@ -401,12 +392,12 @@ class TreeBuilder:
                 mard_file.write(os.path.join(MARD_dir, filename) + '\n')
 
         # Calling other methods
-        self.write_gtd(file_name)
-        self.write_ftd(file_name)
-        self.write_bed(file_name)
-        self.write_bei(file_name)
-        self.write_ftl(file_name)
-        self.write_bec(file_name)
+        self.write_gtd(file_name,output_dir)
+        self.write_ftd(file_name,output_dir)
+        self.write_bed(file_name,output_dir)
+        self.write_bei(file_name,output_dir)
+        self.write_ftl(file_name,output_dir)
+        self.write_bec(file_name,output_dir)
 
 
 # Custom JSON Encoder to handle ObjectId

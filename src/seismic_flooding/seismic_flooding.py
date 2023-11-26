@@ -2,7 +2,7 @@
 from src.mainshock_aftershocks.tree_builder import TreeBuilder
 from src.imports import *
 from src.mainshock_aftershocks.seismic import SeismicEvent
-
+from src.mainshock_aftershocks.basic_event_model import BasicEventWriter
 class SeismicFloodingFaultTree:
     def __init__(self, mongodb_uri, db_name,seismic_event_instance):
         self.client = MongoClient(mongodb_uri)
@@ -584,7 +584,7 @@ def main():
 
         # Visualize the tree
         #ft.visualize_tree()
-
-        ft.write_mard("seismic_induced_flooding")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        ft.write_mard("seismic_induced_flooding",current_dir)
 if __name__ == "__main__":
     main()
