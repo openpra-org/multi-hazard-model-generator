@@ -106,7 +106,6 @@ class SeismicEvent:
 
 
         # Call the mainshock fault tree template
-
         room_id = str(ssc_document.get("room_id"))
         ssc_name = str(ssc_document.get("name"))
         ssc_description = str(ssc_document.get("description"))

@@ -1,9 +1,11 @@
+import copy
 
 from tree_builder import TreeBuilder
 from src.imports import *
+from src.mainshock_aftershocks.seismic import SeismicEvent
 
 class SeismicFireFaultTree:
-    def __init__(self, mongodb_uri, db_name):
+    def __init__(self, mongodb_uri, db_name,seismic_event_instance):
         self.client = MongoClient(mongodb_uri)
         self.db = self.client[db_name]
         self.ssc_seismic_fire = self.db["components"]
@@ -23,6 +25,8 @@ class SeismicFireFaultTree:
         self.source_room_ids_dict = {}   # Dictionary to store source room ids with target room as key
         self.combination_of_fire_inside_propagation_dict = {}
         self.ssc_ft_representation = {}
+        self.seismic_event_instance = seismic_event_instance
+
 
     def ssc_fault_tree(self):
         # Get the fire_in_or_to_room_gate template
@@ -51,7 +55,7 @@ class SeismicFireFaultTree:
             self.replace_placeholders(ssc_fault_tree_copy, room_id, room_num, ssc_name, ssc_document.get("description"))
             self.add_ssc_failure_event(room_id, ssc_fault_tree_copy, ssc_document)
             #self.add_combined_fire_inside_propagate_to_ssc_ft(ssc_fault_tree_copy, fire_in_or_to_room_gate_copy)
-            print(ssc_fault_tree_copy)
+            #print(ssc_fault_tree_copy)
             self.remove_object_ids(ssc_fault_tree_copy)
             self.remove_oid(ssc_fault_tree_copy)
             self.remove_id_keys(ssc_fault_tree_copy)
@@ -166,7 +170,7 @@ class SeismicFireFaultTree:
 
     def fire_room_gate(self):
         # Retrieve the template gate document (assuming it's the only one)
-        template_fire_room_gate = self.fire_gate_temp.find_one({})
+        template_fire_room_gate = self.fire_gate_temp.find_one({"id":"SFRR"})
         if template_fire_room_gate is None:
             raise Exception("Template fire inside a room gate not found.")
 
@@ -184,11 +188,11 @@ class SeismicFireFaultTree:
             self.replace_placeholders(template_fire_room_gate_json, room_id, room_name)
             # Add HRA events
 
-            self.add_hra_events(template_fire_room_gate_json, room_id)
+            self.add_hra_events(template_fire_room_gate_json, room_id,room_name)
             # Add sources of fire events
-            self.add_sources_of_fire(template_fire_room_gate_json, self.sources_collection, room_id)
-
-            self.add_fire_sprinkler_failures(template_fire_room_gate_json,room_id)
+            self.add_sources_of_fire(template_fire_room_gate_json, room_id,room_name)
+            fire_sprinkler_failure_gate=self.create_fire_sprinkler_failure_gate(room_id,room_name)
+            template_fire_room_gate_json["inputs"].append(fire_sprinkler_failure_gate)
             # Remove ObjectId values from the JSON representation
             gate_json_representation = self.remove_object_ids(template_fire_room_gate_json)
 
@@ -285,7 +289,7 @@ class SeismicFireFaultTree:
             # Add sources of fire gate in the JSON object
             self.add_seismic_fire_room(template_fire_propagation_gate_json,room_id)
             # Add fire barrier collapse gate
-            self.add_fire_barrier_collapse(template_fire_propagation_gate_json,room_id,room_name)
+            self.add_fire_barrier_collapse(room_id,room_name)
             # Store the gate_json_representation in the dictionary with room_id as the key
             self.propagation_from_one_room_representation[room_id] = template_fire_propagation_gate_json
 
@@ -305,66 +309,65 @@ class SeismicFireFaultTree:
         return json_obj
 
 
-    def add_fire_barrier_collapse(self, json_obj, room_id,room_num):
-        for index, input in enumerate(json_obj['inputs']):
-            new_input = input
-            # Check if the input has 'id' equal to 'CFB'
-            if 'id' in input and input['id'] == 'CTB':
-                # Try to find the fire barrier document
-                new_input = self.fire_barriers_collection.find_one({"room_id": ObjectId(room_id)},
-                                                                      {'room_id': 0, '_id': 0})
-                if new_input:
-                    # If the document exists, update the 'room_id' field
-                    new_input['room_id'] = room_id
-                    json_obj['inputs'][index] = new_input
-                else:
-                    warnings.warn(f"Thermal barrier document not found for room_id: {room_id}", UserWarning)
+    def add_fire_barrier_collapse(self, room_id,room_num):
 
-        for key, value in json_obj.items():
-            if key == "id" and value == "CTB":
-                # Look for the fire barrier document with the matching room_id
-                barrier_doc = self.fire_barriers_collection.find_one({"room_id": ObjectId(room_id)})
-                if barrier_doc:
-                    json_obj[key] = barrier_doc
-                else:
-                    warnings.warn(f"Fire barrier document not found for room_id: {room_id}", UserWarning)
-        self.replace_placeholders(json_obj,room_id,room_num)
-        return json_obj
+        # Fetch thermal barrier collapse gate
+        thermal_barrier_collapse_gate = copy.deepcopy(self.fire_barriers_collection.find_one({"id":"CTB-GT"}))
 
-    def add_hra_events(self, json_obj, room_id, parent=None, parent_key=None):
+        # Add barrier seismic and fire collapse fault tree and event to the barrier collapse gate
+        # Adding thermal barrier collapse due to fire
+        thermal_barrier_collapse_gate["inputs"].append(
+            self.fire_barriers_collection.find_one(
+                {"room_id": ObjectId(room_id), "type": "FIR_LN"},
+                {'room_id': 0, '_id': 0}
+            )
+        )
+
+        # Adding thermal barrier collapse due to seismic event
+
+
+        # Find the fire barrier document based on room_id and type
+        fire_barrier_query = {"room_id": ObjectId(room_id), "type": "SBE"}
+        fire_barrier_document = self.remove_object_ids(self.fire_barriers_collection.find_one(fire_barrier_query))
+        # Append the fire barrier document to thermal_barrier_collapse_gate["inputs"]
+        thermal_barrier_collapse_gate_inputs = thermal_barrier_collapse_gate["inputs"].append(fire_barrier_document)
+
+        # Create the seismic fault tree using the updated inputs
+        thermal_barrier_collapse_seismic_fault_tree = self.seismic_event_instance.create_seismic_fault_tree(
+            thermal_barrier_collapse_gate_inputs)
+
+
+        self.replace_placeholders(thermal_barrier_collapse_seismic_fault_tree,room_id,room_num)
+        thermal_barrier_collapse_gate["inputs"].append(thermal_barrier_collapse_seismic_fault_tree)
+        self.replace_placeholders(thermal_barrier_collapse_gate,room_id,room_num)
+
+        return thermal_barrier_collapse_gate
+
+    def add_hra_events(self, json_obj, room_id,room_name,parent=None, parent_key=None):
         hra_document = self.fire_HRA_collection.find_one({"room_id": ObjectId(room_id)}, {'room_id': 0, '_id': 0})
-
+        self.replace_placeholders(hra_document,room_id,room_name)
         if hra_document is None:
             raise ValueError(f"No HRA event associated with room_id {room_id}")
 
-        for index, input in enumerate(json_obj['inputs']):
-            if 'id' in input and input['id'] == 'Fire_HRA':
-                new_input = hra_document.copy()
-                new_input['room_id'] = room_id
-                json_obj['inputs'][index] = new_input
+        json_obj["inputs"].append(hra_document)
 
-        for key, value in json_obj.items():
-            if key == "id" and value == "Fire_HRA":
-                json_obj[key] = hra_document
 
         return json_obj
 
-    def add_sources_of_fire(self, json_obj, sources_collection, room_id):
+    def add_sources_of_fire(self, json_obj, room_id,room_name):
+        # Fetch the SOFR gate from the MongoDB collection
+        sofr_gate= copy.deepcopy(self.fire_gate_temp.find_one({"id":"SOFRR"}))
+        self.replace_placeholders(sofr_gate,room_id,room_name)
+
         # Fetch SOFR documents from the MongoDB collection
-        sofr_documents = list(sources_collection.find({"room_id": ObjectId(room_id)}))
+        sofr_documents = list(self.sources_collection.find({"room_id": ObjectId(room_id)}))
 
-        # Find dictionaries within fire_gate_temp that contain "id": "SOFRR" and update them
-        if "inputs" in json_obj:
-            for input_obj in json_obj["inputs"]:
-                if input_obj.get("id") == "SOFRR":
-                    # Assuming input_obj is your JSON document
-                    if "inputs" not in input_obj:
-                        input_obj["inputs"] = []
+        for sofr_document in sofr_documents:
+            sofr_document_seismic_fault_tree=self.seismic_event_instance.create_seismic_fault_tree(sofr_document)
+            self.replace_placeholders(sofr_document_seismic_fault_tree,room_id,room_name,sofr_document["name"],sofr_document["description"])
+            sofr_gate["inputs"].append(sofr_document_seismic_fault_tree)
 
-                    # Append SOFRR documents from the fetched list
-                    input_obj["inputs"].extend(sofr_documents)
-
-
+        json_obj["inputs"].append(sofr_gate)
         # Return the updated SIR_doc
         return json_obj
 
@@ -439,21 +442,35 @@ class SeismicFireFaultTree:
         # If no matching document is found, return an empty list or raise an exception
         return []
 
-    def add_fire_sprinkler_failures(self, json_obj, room_id):
-        # Look for the fire sprinkler document with the matching room_id
-        fire_sprinkler_document = self.fire_sprinkler_collection.find_one({"room_id": ObjectId(room_id)},
-                                                                          {'room_id': 0, '_id': 0})
+    def create_fire_sprinkler_failure_gate(self, room_id,room_num):
+        # Look for the fire sprinkler gate
+        fire_sprinkler_failure_gate = copy.deepcopy(self.fire_sprinkler_collection.find_one({"id": "SPR"}))
 
-        if fire_sprinkler_document is None:
-            raise ValueError(f"No fire sprinkler failure event associated with room_id {room_id}")
+        # Create the seismic fault tree for fire sprinkler seismic failure
+        fire_sprinkler_seismic_event = copy.deepcopy(self.fire_sprinkler_collection.find_one({"type": "SBE", "room_id": ObjectId(room_id)})
 
-        for index, input in enumerate(json_obj['inputs']):
-            if 'id' in input and input['id'] == 'fire_sprk':
-                new_input = fire_sprinkler_document.copy()
-                new_input['room_id'] = room_id
-                json_obj['inputs'][index] = new_input
+        )
+        ssc_description = fire_sprinkler_seismic_event["description"]
+        ssc_name= fire_sprinkler_seismic_event["name"]
+        seismic_fault_tree_fire_sprinkler = self.seismic_event_instance.create_seismic_fault_tree(fire_sprinkler_seismic_event)
 
-        return json_obj
+        # Append the seismic fault tree to the  fire sprinkler gate
+        fire_sprinkler_failure_gate["inputs"].append(seismic_fault_tree_fire_sprinkler)
+
+        # Add Failure of sprinkler activation events
+        fire_sprinkler_failure_gate["inputs"].append(copy.deepcopy(self.fire_sprinkler_collection.find_one({"type": "FIR_SPR_RAND"})))
+        fire_sprinkler_failure_gate["inputs"].append(copy.deepcopy(self.fire_sprinkler_collection.find_one({"type": "FIR-DET"})))
+
+        self.replace_placeholders(fire_sprinkler_failure_gate,room_id,room_num,ssc_name,ssc_description)
+        self.remove_object_ids(fire_sprinkler_failure_gate)
+        return fire_sprinkler_failure_gate
+
+
+
+
+
+
+
 
     def remove_oid(self, node_data):
         if isinstance(node_data, dict):
@@ -498,9 +515,10 @@ def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/'
     fire_db_name = 'seismic_induced_fire_database'
     general_db_name = 'MultiHazards_PRA_General'
+    seismic_event_instance = SeismicEvent(mongodb_uri, general_db_name)
 
     # Usage example
-    tree = SeismicFireFaultTree(mongodb_uri, fire_db_name)
+    tree = SeismicFireFaultTree(mongodb_uri, fire_db_name,seismic_event_instance)
 
     tree.fire_room_gate()  # This method doesn't return anything, so no need to pass it to scan_json_for_id
 
@@ -512,7 +530,7 @@ def main():
     for json_fault_tree in json_fault_trees:
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object
         ft.build_tree(json_fault_tree)
-        print(json_fault_tree)
+        #print(json_fault_tree)
         # Print the tree hierarchy with node information
         #ft.print_tree(ft.tree)
 
