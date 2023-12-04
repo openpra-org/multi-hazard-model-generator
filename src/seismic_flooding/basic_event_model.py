@@ -73,9 +73,38 @@ class BasicEventWriter:
         else:
             raise ValueError("Invalid distribution_type for flood model")
 
-    def HRA_model(self, node):
 
-        pass
+    def flood_model(self, node, file):
+        # Check if the node has the failure_model with distribution_type "FL"
+        if (
+            node.failure_model
+            and node.failure_model.get("distribution_type") == "FR"
+        ):
+            # Define the parameters based on the provided criteria
+            name = node.name
+            FdT = "J"
+            UdC = ""
+            UdT = "T"  # Change this to "T" for Flood distribution type
+            UdValue = node.failure_model.get("beta_r_uncertainty", "")
+            Prob = node.failure_model.get("median_flood_depth", "")  # Change this to "median_flood_depth"
+            Lambda = ""
+            Tau = "0.000E+000"
+            Mission = "0.000E+000"
+            Init = ""
+            PF = ""
+            UdValue2 = node.failure_model.get("beta_u_uncertainty", "")
+            Calc_Prob = ""
+            Freq = ""
+            Analysis_Type = "RANDOM"
+            Phase_Type = "CD"
+            Project = "G-PWR"
+
+            # Write the information to the file
+            file.write(
+                f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
+            )
+        else:
+            raise ValueError("Invalid distribution_type for flood model")
 
 
     def write_bei_data(self, node, file):

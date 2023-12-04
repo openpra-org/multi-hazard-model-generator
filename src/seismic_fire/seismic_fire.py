@@ -1,6 +1,6 @@
 import copy
 
-from tree_builder import TreeBuilder
+from src.mainshock_aftershocks.tree_builder import TreeBuilder
 from src.imports import *
 from src.mainshock_aftershocks.seismic import SeismicEvent
 
@@ -329,17 +329,16 @@ class SeismicFireFaultTree:
         # Find the fire barrier document based on room_id and type
         fire_barrier_query = {"room_id": ObjectId(room_id), "type": "SBE"}
         fire_barrier_document = self.remove_object_ids(self.fire_barriers_collection.find_one(fire_barrier_query))
-        # Append the fire barrier document to thermal_barrier_collapse_gate["inputs"]
-        thermal_barrier_collapse_gate_inputs = thermal_barrier_collapse_gate["inputs"].append(fire_barrier_document)
-
-        # Create the seismic fault tree using the updated inputs
         thermal_barrier_collapse_seismic_fault_tree = self.seismic_event_instance.create_seismic_fault_tree(
-            thermal_barrier_collapse_gate_inputs)
+            fire_barrier_document)
+        self.replace_placeholders(thermal_barrier_collapse_seismic_fault_tree,room_id,room_num,ssc_name=fire_barrier_document["name"],ssc_description= fire_barrier_document["description"])
 
 
-        self.replace_placeholders(thermal_barrier_collapse_seismic_fault_tree,room_id,room_num)
+        # Append the fire barrier document to thermal_barrier_collapse_gate["inputs"]
         thermal_barrier_collapse_gate["inputs"].append(thermal_barrier_collapse_seismic_fault_tree)
+        # Create the seismic fault tree using the updated inputs
         self.replace_placeholders(thermal_barrier_collapse_gate,room_id,room_num)
+
 
         return thermal_barrier_collapse_gate
 
@@ -524,19 +523,15 @@ def main():
 
     tree.propagation_from_one_room_gate()
     tree.propagation_to_room()
-    ft = TreeBuilder(mongodb_uri, general_db_name)
+    ft = TreeBuilder()
 
-    json_fault_trees = [tree.ssc_fault_tree()["CMP-FR-4"]]
+    json_fault_trees = [tree.ssc_fault_tree()["CMP-FR-12"]]
     for json_fault_tree in json_fault_trees:
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object
         ft.build_tree(json_fault_tree)
-        #print(json_fault_tree)
+        print(json_fault_tree)
         # Print the tree hierarchy with node information
-        #ft.print_tree(ft.tree)
-
-        # Visualize the tree
-        ft.visualize_tree()
-
-        ft.write_mard()
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        ft.write_mard("seismic_induced_fire", current_dir)
 if __name__ == "__main__":
     main()

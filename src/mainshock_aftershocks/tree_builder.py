@@ -28,6 +28,7 @@ class TreeBuilder:
         self.unique_BEI_names = set()
         self.g_pwr_written_ftd = False
         self.g_pwr_written_gtd = False
+        self.main_fault_tree_names = set()
 
     def build_tree(self, data):
         self.tree = self._build_node(data)
@@ -208,8 +209,7 @@ class TreeBuilder:
 
             collect_gates(self.tree)
 
-
-    def write_ftd(self, file_name,output_dir):
+    def write_ftd(self, file_name, output_dir):
         """Append gate descriptions to an existing .GTD file"""
         output_dir = os.path.join(output_dir, "MARD")
 
@@ -228,14 +228,20 @@ class TreeBuilder:
                 # Set the flag to True after writing
                 self.g_pwr_written_ftd = True
 
-            def collect_ft(node):
+            def collect_ft(node, is_first_node=True):
                 if node.node_type == "FT":
                     if node.name not in self.unique_ft_names:
-                        f.write(f"{node.name},{node.description} , , ,  , G-PWR\n")
+                        # Check if it's the first node and write accordingly
+                        if is_first_node:
+                            f.write(f"{node.name},{node.description} , , ,  , G-PWR\n")
+                        else:
+                            f.write(f"{node.name},{node.description} , ,S ,  , G-PWR\n")
                         self.unique_ft_names.add(node.name)
+                        is_first_node = False  # Set flag to False after writing for subsequent nodes
                 for child in node.children:
-                    collect_ft(child)
+                    collect_ft(child, is_first_node)
 
+            # Assume that self.tree is the root of your tree
             collect_ft(self.tree)
 
     def write_ftl(self, file_name,output_dir):
