@@ -289,7 +289,7 @@ class SeismicFireFaultTree:
             # Add sources of fire gate in the JSON object
             self.add_seismic_fire_room(template_fire_propagation_gate_json,room_id)
             # Add fire barrier collapse gate
-            self.add_fire_barrier_collapse(room_id,room_name)
+            self.add_fire_barrier_collapse(template_fire_propagation_gate_json,room_id,room_name)
             # Store the gate_json_representation in the dictionary with room_id as the key
             self.propagation_from_one_room_representation[room_id] = template_fire_propagation_gate_json
 
@@ -309,7 +309,7 @@ class SeismicFireFaultTree:
         return json_obj
 
 
-    def add_fire_barrier_collapse(self, room_id,room_num):
+    def add_fire_barrier_collapse(self,json_obj, room_id,room_num):
 
         # Fetch thermal barrier collapse gate
         thermal_barrier_collapse_gate = copy.deepcopy(self.fire_barriers_collection.find_one({"id":"CTB-GT"}))
@@ -338,9 +338,8 @@ class SeismicFireFaultTree:
         thermal_barrier_collapse_gate["inputs"].append(thermal_barrier_collapse_seismic_fault_tree)
         # Create the seismic fault tree using the updated inputs
         self.replace_placeholders(thermal_barrier_collapse_gate,room_id,room_num)
-
-
-        return thermal_barrier_collapse_gate
+        json_obj["inputs"].append(thermal_barrier_collapse_gate)
+        return json_obj
 
     def add_hra_events(self, json_obj, room_id,room_name,parent=None, parent_key=None):
         hra_document = self.fire_HRA_collection.find_one({"room_id": ObjectId(room_id)}, {'room_id': 0, '_id': 0})
@@ -523,7 +522,8 @@ def main():
 
     tree.propagation_from_one_room_gate()
     tree.propagation_to_room()
-    ft = TreeBuilder()
+    ft = TreeBuilder(mongodb_uri, general_db_name)
+
 
     json_fault_trees = [tree.ssc_fault_tree()["CMP-FR-12"]]
     for json_fault_tree in json_fault_trees:

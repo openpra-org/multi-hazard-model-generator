@@ -1,7 +1,7 @@
 from src.imports import *
 from src.mainshock_aftershocks.basic_event_model import BasicEventWriter
 from collections import deque
-
+from src.mainshock_aftershocks.flag_sets import FlagSetWriter
 class Node:
     def __init__(self, logic_type, description, node_type,name,failure_model=None,library = None,procedure = None,id = None):
         self.logic_type = logic_type
@@ -20,7 +20,9 @@ class Node:
 
 
 class TreeBuilder:
-    def __init__(self):
+    def __init__(self, mongodb_uri, db_name):
+        self.client = MongoClient(mongodb_uri)
+        self.db = self.client[db_name]
         self.tree = None
         self.unique_gate_names = set()
         self.unique_ft_names = set()
@@ -30,6 +32,8 @@ class TreeBuilder:
         self.g_pwr_written_gtd = False
         self.main_fault_tree_names = set()
 
+        # Create an instance of FlagSetWriter
+        self.flag_set_writer = FlagSetWriter(mongodb_uri, db_name)
     def build_tree(self, data):
         self.tree = self._build_node(data)
 
@@ -235,7 +239,7 @@ class TreeBuilder:
                         if is_first_node:
                             f.write(f"{node.name},{node.description} , , ,  , G-PWR\n")
                         else:
-                            f.write(f"{node.name},{node.description} , ,S ,  , G-PWR\n")
+                            f.write(f"{node.name},{node.description} ,S , ,  , G-PWR\n")
                         self.unique_ft_names.add(node.name)
                         is_first_node = False  # Set flag to False after writing for subsequent nodes
                 for child in node.children:
@@ -390,7 +394,7 @@ class TreeBuilder:
         output_dir = os.path.join(current_dir,"output")
         MARD_dir = "MARD"
         # List of filenames corresponding to the methods
-        filenames = [file_name + ext for ext in ['.GTD', '.FTD', '.BED', '.BEI', '.FTL', '.BEC']]
+        filenames = [file_name + ext for ext in ['.GTD', '.FTD', '.BED', '.BEI', '.FTL', '.BEC', '.CSD', '.CSA', '.CSI']]
 
         # Writing filenames to output/seismic.MARD
         with open(os.path.join(output_dir, file_name + '.MARD'), 'w') as mard_file:
@@ -398,12 +402,15 @@ class TreeBuilder:
                 mard_file.write(os.path.join(MARD_dir, filename) + '\n')
 
         # Calling other methods
-        self.write_gtd(file_name,output_dir)
-        self.write_ftd(file_name,output_dir)
-        self.write_bed(file_name,output_dir)
-        self.write_bei(file_name,output_dir)
-        self.write_ftl(file_name,output_dir)
-        self.write_bec(file_name,output_dir)
+        self.write_gtd(file_name, output_dir)
+        self.write_ftd(file_name, output_dir)
+        self.write_bed(file_name, output_dir)
+        self.write_bei(file_name, output_dir)
+        self.write_ftl(file_name, output_dir)
+        self.write_bec(file_name, output_dir)
+        self.flag_set_writer.write_csd(file_name, output_dir)
+        self.flag_set_writer.write_csa(file_name, output_dir)
+        self.flag_set_writer.write_csi(file_name, output_dir)
 
 
 # Custom JSON Encoder to handle ObjectId

@@ -571,7 +571,7 @@ def main():
     tree.flood_room_gate()  # This method doesn't return anything, so no need to pass it to scan_json_for_id
     tree.propagation_from_one_room_gate()
     tree.propagation_to_room()
-    ft = TreeBuilder()
+    ft = TreeBuilder(mongodb_uri,general_db_name)
 
     json_fault_trees = [tree.ssc_fault_tree()["CMP-7"], tree.ssc_fault_tree()["CMP-17"]]
     for json_fault_tree in json_fault_trees:
