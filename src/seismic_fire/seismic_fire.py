@@ -23,7 +23,10 @@ class SeismicFireFaultTree:
         self.propagation_from_one_room_representation = {}  # Dictionary to store fire propagation from one room gate_json_representation by room_id
         self.fire_propagation_to_room_representation = {}  # Dictionary to store fire propagation to one room gate_json by room_id
         self.source_room_ids_dict = {}   # Dictionary to store source room ids with target room as key
+        self.thermal_barrier_collapse_ft_dict = {}   # Dictionary to store thermal barrier fault trees
+        self.barrier_house_event_dict = {}  # Dictionary to store barrier failure house events
         self.combination_of_fire_inside_propagation_dict = {}
+
         self.ssc_ft_representation = {}
         self.seismic_event_instance = seismic_event_instance
 
@@ -289,7 +292,10 @@ class SeismicFireFaultTree:
             # Add sources of fire gate in the JSON object
             self.add_seismic_fire_room(template_fire_propagation_gate_json,room_id)
             # Add fire barrier collapse gate
-            self.add_fire_barrier_collapse(template_fire_propagation_gate_json,room_id,room_name)
+            #self.add_fire_barrier_collapse(template_fire_propagation_gate_json,room_id,room_name)
+            # Add thermal barrier house events
+            thermal_barrier_house_event =self.create_barrier_house_event(room_id,room_name)
+            template_fire_propagation_gate_json["inputs"].append(thermal_barrier_house_event)
             # Store the gate_json_representation in the dictionary with room_id as the key
             self.propagation_from_one_room_representation[room_id] = template_fire_propagation_gate_json
 
@@ -312,7 +318,7 @@ class SeismicFireFaultTree:
     def add_fire_barrier_collapse(self,json_obj, room_id,room_num):
 
         # Fetch thermal barrier collapse gate
-        thermal_barrier_collapse_gate = copy.deepcopy(self.fire_barriers_collection.find_one({"id":"CTB-GT"}))
+        thermal_barrier_collapse_gate = copy.deepcopy(self.fire_barriers_collection.find_one({"id":"CTB-FT"}))
 
         # Add barrier seismic and fire collapse fault tree and event to the barrier collapse gate
         # Adding thermal barrier collapse due to fire
@@ -340,6 +346,59 @@ class SeismicFireFaultTree:
         self.replace_placeholders(thermal_barrier_collapse_gate,room_id,room_num)
         json_obj["inputs"].append(thermal_barrier_collapse_gate)
         return json_obj
+
+    def create_barrier_house_event(self, room_id, room_num):
+        # Check if the room_id is already in the dictionary
+        if room_id in self.barrier_house_event_dict:
+            return self.barrier_house_event_dict[room_id]
+
+        # Fetch barrier house event template
+        barrier_house_event_temp = copy.deepcopy(self.fire_barriers_collection.find_one({"id": "HE-FR-BAR"}))
+
+        # Replace placeholders and update the dictionary
+        self.replace_placeholders(barrier_house_event_temp, room_id, room_num)
+        self.barrier_house_event_dict[room_id] = barrier_house_event_temp
+
+        return barrier_house_event_temp
+
+    def create_fire_barrier_collapse_ft(self, room_id, room_num):
+        # Check if the room_id is already in the dictionary
+        if room_id in self.thermal_barrier_collapse_ft_dict:
+            return self.thermal_barrier_collapse_ft_dict[room_id]
+
+        # Fetch thermal barrier collapse gate
+        thermal_barrier_collapse_ft = copy.deepcopy(self.fire_barriers_collection.find_one({"id": "CTB-FT"}))
+
+        # Add barrier seismic and fire collapse fault tree and event to the barrier collapse gate
+        # Adding thermal barrier collapse due to fire
+        thermal_barrier_collapse_ft["inputs"].append(
+            self.fire_barriers_collection.find_one(
+                {"room_id": ObjectId(room_id), "type": "FIR_LN"},
+                {'room_id': 0, '_id': 0}
+            )
+        )
+
+        # Adding thermal barrier collapse due to seismic event
+
+        # Find the fire barrier document based on room_id and type
+        fire_barrier_query = {"room_id": ObjectId(room_id), "type": "SBE"}
+        fire_barrier_document = self.remove_object_ids(self.fire_barriers_collection.find_one(fire_barrier_query))
+        thermal_barrier_collapse_seismic_fault_tree = self.seismic_event_instance.create_seismic_fault_tree(
+            fire_barrier_document)
+        self.replace_placeholders(thermal_barrier_collapse_seismic_fault_tree, room_id, room_num,
+                                  ssc_name=fire_barrier_document["name"],
+                                  ssc_description=fire_barrier_document["description"])
+
+        # Append the fire barrier document to thermal_barrier_collapse_gate["inputs"]
+        thermal_barrier_collapse_ft["inputs"].append(thermal_barrier_collapse_seismic_fault_tree)
+
+        # Create the seismic fault tree using the updated inputs
+        self.replace_placeholders(thermal_barrier_collapse_ft, room_id, room_num)
+
+        # Store the thermal_barrier_collapse_gate in the global dictionary
+        self.thermal_barrier_collapse_ft_dict[room_id] = thermal_barrier_collapse_ft
+
+        return thermal_barrier_collapse_ft
 
     def add_hra_events(self, json_obj, room_id,room_name,parent=None, parent_key=None):
         hra_document = self.fire_HRA_collection.find_one({"room_id": ObjectId(room_id)}, {'room_id': 0, '_id': 0})
