@@ -38,6 +38,7 @@ class TreeBuilder:
         self.tree = self._build_node(data)
 
     def _build_node(self, node_data):
+        print(node_data)
         logic_type = node_data.get("logic_type")
 
         # Check if logic_type is None or name is None, and if so, return None to ignore this node

@@ -86,7 +86,7 @@ class BasicEventWriter:
         # Check if the node has the failure_model with distribution_type "FR"
         failure_model = node.failure_model
         print(failure_model)
-        if failure_model and failure_model.get("distribution_type") == "FR":
+        if failure_model and failure_model.get("distribution_type") == "FL":
             # Define the parameters based on the provided criteria
             name = node.name  # assuming 'name' is an attribute of the 'Node' object
             FdT = "J"
@@ -317,7 +317,7 @@ class BasicEventWriter:
             self.point_value_event_model(node, file)
 
 
-        elif node.node_type == "FRI-LN":
+        elif node.node_type == "FIR_LN":
             self.fire_model(node,file)
 
         else:
