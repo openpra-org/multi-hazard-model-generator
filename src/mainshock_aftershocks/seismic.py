@@ -126,6 +126,13 @@ class SeismicEvent:
         ssc_name = str(ssc_document.get("name"))
         ssc_description = str(ssc_document.get("description"))
         mainshock_gate_bins = []  # List to store the mainshock_gate_bin objects
+        # Check if amplification is set to "Yes" in general_input
+        amplification_enabled = (
+                self.general_input.find_one({}, {"Mainshock.amplification": 1}).get("Mainshock", {}).get(
+                    "amplification", "") == "Yes"
+        )
+
+
 
         if 'type' in ssc_document and ssc_document['type'] == 'SBE':
             for bin_num, ms_bin in enumerate(ms_vector_values, start=1):
@@ -134,7 +141,11 @@ class SeismicEvent:
                 for input in mainshock_gate_bin['inputs']:
                     if 'id' in input and input['id'] == 'MS-BE':
                         failure_model_params = ssc_document.get("failure_model", {})
-                        failure_model_params["pga"] = ms_bin
+                        if amplification_enabled:
+                            failure_model_params["pga"] = ms_bin*failure_model_params["amplification"]
+                        else:
+                            failure_model_params["pga"] = ms_bin
+
                         input["failure_model"] = failure_model_params
                         self.replace_placeholders(mainshock_gate_bin, room_id, ssc_name, ssc_description, ms_bin,
                                                   bin_num)
