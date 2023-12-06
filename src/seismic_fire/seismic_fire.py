@@ -591,7 +591,7 @@ def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/'
     fire_db_name = 'seismic_induced_fire_database'
     general_db_name = 'MultiHazards_PRA_General'
-    seismic_event_instance = SeismicEvent(mongodb_uri, general_db_name)
+    seismic_event_instance = SeismicEvent(mongodb_uri, general_db_name) #
 
     # Usage example
     tree = SeismicFireFaultTree(mongodb_uri, fire_db_name,seismic_event_instance)
