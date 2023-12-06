@@ -358,13 +358,32 @@ class SeismicFireFaultTree:
         self.replace_placeholders(sofr_gate,room_id,room_name)
 
         # Fetch SOFR documents from the MongoDB collection
-        sofr_documents = list(self.sources_collection.find({"room_id": ObjectId(room_id)}))
+        sofr_seismic_documents = list(self.sources_collection.find({"room_id": ObjectId(room_id), "type": "SBE"}))
 
-        for sofr_document in sofr_documents:
-            sofr_document_seismic_fault_tree=self.seismic_event_instance.create_seismic_fault_tree(sofr_document)
-            self.replace_placeholders(sofr_document_seismic_fault_tree,room_id,room_name,sofr_document["name"],sofr_document["description"])
-            sofr_gate["inputs"].append(sofr_document_seismic_fault_tree)
+        for sofr_seismic_document in sofr_seismic_documents:
+            ssc_id = sofr_seismic_document.get("ssc_id")
+            if ssc_id:
+                # Find documents in sources_collection with the same ssc_id and type "FIR-RAND"
+                fir_rand_documents = list(self.sources_collection.find({"ssc_id": ssc_id, "type": "FIR-RAND"}))
 
+                # Process fir_rand_documents as needed, e.g., add them to sofr_gate["inputs"]
+
+                sofr_document_seismic_fault_tree = self.seismic_event_instance.create_seismic_fault_tree(
+                    sofr_seismic_document)
+                self.replace_placeholders(sofr_document_seismic_fault_tree, room_id, room_name,
+                                          sofr_seismic_document["name"], sofr_seismic_document["description"])
+
+                # Append sofr_document_seismic_fault_tree to sofr_gate["inputs"]
+                sofr_gate["inputs"].append(sofr_document_seismic_fault_tree)
+
+                # Append fir_rand_documents to sofr_gate
+                for fir_rand_document in fir_rand_documents:
+
+                    self.replace_placeholders(fir_rand_document, room_id, room_name, fir_rand_document["name"],
+                                              fir_rand_document["description"])
+                    sofr_gate["inputs"].append(fir_rand_document)
+
+        # Append sofr_gate to json_obj["inputs"]
         json_obj["inputs"].append(sofr_gate)
         # Return the updated SIR_doc
         return json_obj

@@ -315,6 +315,9 @@ class BasicEventWriter:
             self.point_value_event_model(node,file)
         elif node.node_type == "FIR_SPR_RAND":
             self.point_value_event_model(node, file)
+        elif node.node_type == "FIR-RAND":
+            self.point_value_event_model(node, file)
+
 
 
         elif node.node_type == "FIR_LN":
