@@ -2,6 +2,7 @@ from src.imports import *
 from src.mainshock_aftershocks.basic_event_model import BasicEventWriter
 from collections import deque
 from src.mainshock_aftershocks.flag_sets import FlagSetWriter
+from src.aging import AgingModel
 class Node:
     def __init__(self, logic_type, description, node_type,name,failure_model=None,library = None,procedure = None,id = None):
         self.logic_type = logic_type
@@ -23,6 +24,9 @@ class TreeBuilder:
     def __init__(self, mongodb_uri, db_name):
         self.client = MongoClient(mongodb_uri)
         self.db = self.client[db_name]
+        self.general_input = self.db["General_Input"]
+
+
         self.tree = None
         self.unique_gate_names = set()
         self.unique_ft_names = set()
@@ -34,6 +38,7 @@ class TreeBuilder:
 
         # Create an instance of FlagSetWriter
         self.flag_set_writer = FlagSetWriter(mongodb_uri, db_name)
+        self.aging_model_updater= AgingModel(mongodb_uri,db_name)
     def build_tree(self, data):
         self.tree = self._build_node(data)
 
@@ -334,7 +339,7 @@ class TreeBuilder:
 
             collect_nodes(self.tree)
 
-    def write_bei(self,file_name,output_dir):
+    def write_bei(self, file_name, output_dir):
         """Append Basic Event Descriptions (BED) to an existing file for nodes with logic_type == 'BE'"""
         # Construct output directory
         output_dir = os.path.join(output_dir, "MARD")
@@ -344,12 +349,22 @@ class TreeBuilder:
         # Create an instance of BasicEventWriter
         bei_writer = BasicEventWriter()
 
-        with open(file_path, 'a') as f:  # Change 'w' to 'a' for appending
+        # Is aging considered
+        consider_aging = False  # Define consider_aging before the if statement
 
+        # Check if "consider_aging" is true, case-insensitively
+        if str(self.general_input.find_one({}, {"Aging.consider_aging": 1}).get("Aging", {}).get(
+                "consider_aging")).lower() == "true":
+            consider_aging = True
+
+        with open(file_path, 'a') as f:  # Change 'w' to 'a' for appending
             def collect_nodes(node):
                 if node.logic_type == "BE":
                     if node.name not in self.unique_BEI_names:
                         # Call write_bei_data method with file and node arguments
+                        if consider_aging:
+                            self.aging_model_updater.update_failure_model(node)
+                            print("True aging")
                         bei_writer.write_bei_data(node, f)
 
                         self.unique_BEI_names.add(node.name)
