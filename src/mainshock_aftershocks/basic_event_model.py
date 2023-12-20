@@ -85,7 +85,6 @@ class BasicEventWriter:
     def fire_model(self, node, file):
         # Check if the node has the failure_model with distribution_type "FR"
         failure_model = node.failure_model
-        print(failure_model)
         if failure_model and failure_model.get("distribution_type") == "FL":
             # Define the parameters based on the provided criteria
             name = node.name  # assuming 'name' is an attribute of the 'Node' object
@@ -221,7 +220,6 @@ class BasicEventWriter:
             file.write(
                 f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
             )
-            print(node.failure_model.get("prop"))
         else:
             raise ValueError("Invalid distribution_type for Point Value event")
 
@@ -287,29 +285,21 @@ class BasicEventWriter:
             raise ValueError("Invalid compound event")
 
     def write_bei_data(self, node, file):
-        print("write_bei_data accessed")
-        print(f"Node Type: {node.node_type}")
+
 
         if node.node_type == "SBE":
-            print("SBE branch")
             self.seismic_model(node, file)
         elif node.node_type == "HE":
-            print("HE branch")
             self.house_event_model(node, file)
         elif node.node_type == "ASCE":
-            print("ASCE branch")
             self.compound_event_information_model(node, file)
         elif node.node_type == "ASFE":
-            print("ASFE branch")
             self.value_event_model(node, file)
         elif node.node_type == "FLD_LN":
-            print("FLD_LN branch")
             self.flood_model(node, file)
         elif node.node_type == "FLD_HRA":
-            print("FLD_HRA branch")
             self.HRA_event_model(node, file)
         elif node.node_type == "FIR_HRA":
-            print("FIR_HRA branch")
             self.HRA_event_model(node, file)
         elif node.node_type == "FIR-DET":
             self.point_value_event_model(node,file)
@@ -322,11 +312,6 @@ class BasicEventWriter:
 
         elif node.node_type == "FIR_LN":
             self.fire_model(node,file)
-
-        else:
-            print("Other branch")
-
-    # ...
 
 
 

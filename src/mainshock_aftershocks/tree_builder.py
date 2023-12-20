@@ -4,7 +4,7 @@ from collections import deque
 from src.mainshock_aftershocks.flag_sets import FlagSetWriter
 from src.aging import AgingModel
 class Node:
-    def __init__(self, logic_type, description, node_type,name,failure_model=None,library = None,procedure = None,id = None):
+    def __init__(self, logic_type, description, node_type,name,failure_model=None,library = None,procedure = None,id = None,room_id=None):
         self.logic_type = logic_type
         self.description = description
         self.node_type = node_type
@@ -13,6 +13,7 @@ class Node:
         self.library = library
         self.procedure = procedure
         self.id = id
+        self.room_id = room_id
 
         self.children = []
 
@@ -43,7 +44,6 @@ class TreeBuilder:
         self.tree = self._build_node(data)
 
     def _build_node(self, node_data):
-        print(node_data)
         logic_type = node_data.get("logic_type")
 
         # Check if logic_type is None or name is None, and if so, return None to ignore this node
@@ -57,8 +57,9 @@ class TreeBuilder:
         libray = node_data.get("library")
         procedure = node_data.get("procedure")
         id  = node_data.get("id")
+        room_id = node_data.get('room_id')
 
-        node = Node(logic_type, description, node_type, name, failure_model,libray,procedure,id)
+        node = Node(logic_type, description, node_type, name, failure_model,libray,procedure,id,room_id)
 
         if "inputs" in node_data:
             inputs = node_data["inputs"]
@@ -183,7 +184,6 @@ class TreeBuilder:
     def print_tree(self, node=None, level=0):
         if node is None:
             return  # Exit the function if the node is None
-        print(node)
         print("  " * level + f"Logic Type: {node.logic_type}, Description: {node.description}, Type: {node.node_type}")
 
         for child in node.children:
@@ -364,7 +364,6 @@ class TreeBuilder:
                         # Call write_bei_data method with file and node arguments
                         if consider_aging:
                             self.aging_model_updater.update_failure_model(node)
-                            print("True aging")
                         bei_writer.write_bei_data(node, f)
 
                         self.unique_BEI_names.add(node.name)

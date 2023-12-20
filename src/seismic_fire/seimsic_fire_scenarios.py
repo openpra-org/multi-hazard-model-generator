@@ -33,17 +33,9 @@ class SeismicFireFaultTree:
 
 
 
-
-
-
-
-
-
-
-
     def ssc_fault_tree(self):
         # Get the fire_in_or_to_room_gate template
-        fire_in_or_to_room_gate = self.ssc_fault_tree_template.find_one({"id": "SSC-FR-SCEN-FT"})
+        fire_in_or_to_room_gate = self.ssc_fault_tree_template.find_one({"id": "SFR-RP"})
 
         # Iterate over documents in the self.ssc_seismic_fire collection
         cursor = self.ssc_seismic_fire.find({})
@@ -56,12 +48,8 @@ class SeismicFireFaultTree:
             room_info = self.rooms_collection.find_one({"_id": ObjectId(room_id)})
             room_num = room_info.get("name") if room_info else None
 
-            # Fetch the higher fault tree template that includes all the scenarios
-            fire_fault_tree = copy.deepcopy(self.ssc_fault_tree_template.find_one({"id": "SSC-FR-FT"}))
-
-
             # Create a copy of the ssc_fault_tree_template
-            ssc_fault_tree_copy = copy.deepcopy(self.ssc_fault_tree_template.find_one())
+            ssc_fault_tree_copy = copy.deepcopy(self.ssc_fault_tree_template.find_one({"id": "SSC-FR-SCEN-FT"}))
 
             # Build the fire_in_or_to_room_gate and add it to ssc_fault_tree_copy
             fire_in_or_to_room_gate_copy = copy.deepcopy(fire_in_or_to_room_gate)
@@ -75,7 +63,7 @@ class SeismicFireFaultTree:
             #print(ssc_fault_tree_copy)
             self.remove_object_ids(ssc_fault_tree_copy)
             self.remove_oid(ssc_fault_tree_copy)
-            self.remove_id_keys(ssc_fault_tree_copy)
+            #self.remove_id_keys(ssc_fault_tree_copy)
 
             # Store the result in the ssc_ft_representation dictionary
             self.ssc_ft_representation[ssc_name] = ssc_fault_tree_copy
@@ -434,8 +422,16 @@ class SeismicFireFaultTree:
         return json_obj
 
     def add_sources_of_fire(self, json_obj, room_id,room_name):
+
+        # Fetch the sources of fire house event gate
+        sofr_he_gate = copy.deepcopy(self.fire_gate_temp.find_one({"id": "SOF-HE"}))
+        # Add the sources of fire house event to the sofr_he_gate
+        sofr_he_gate["inputs"].append(copy.deepcopy(self.sources_collection.find_one({"id": "HE-FR-SRC"})))
+        self.replace_placeholders(sofr_he_gate,room_id,room_name)
+
         # Fetch the SOFR gate from the MongoDB collection
         sofr_gate= copy.deepcopy(self.fire_gate_temp.find_one({"id":"SOFRR"}))
+
         self.replace_placeholders(sofr_gate,room_id,room_name)
 
         # Fetch SOFR documents from the MongoDB collection
@@ -465,7 +461,8 @@ class SeismicFireFaultTree:
                     sofr_gate["inputs"].append(fir_rand_document)
 
         # Append sofr_gate to json_obj["inputs"]
-        json_obj["inputs"].append(sofr_gate)
+        sofr_he_gate["inputs"].append(sofr_gate)
+        json_obj["inputs"].append(sofr_he_gate)
         # Return the updated SIR_doc
         return json_obj
 
@@ -628,6 +625,7 @@ def main():
     json_fault_trees = [tree.ssc_fault_tree()["CMP-FR-12"]]
     for json_fault_tree in json_fault_trees:
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object
+        print(json_fault_tree)
         ft.build_tree(json_fault_tree)
         print(json_fault_tree)
         # Print the tree hierarchy with node information
