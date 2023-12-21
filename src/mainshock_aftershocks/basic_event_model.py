@@ -13,7 +13,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = "J"
-            UdC = ""
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = "S"
             UdValue = node.failure_model.get("beta_r_uncertainty", "")
             Prob = node.failure_model.get("median_seismic_acceleration", "")
@@ -47,7 +47,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = "J"
-            UdC = ""
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = "S"  # Change this to "T" for Flood distribution type
 
             # Check and retrieve values from failure_model, raising ValueError if any are None
@@ -89,7 +89,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name  # assuming 'name' is an attribute of the 'Node' object
             FdT = "J"
-            UdC = ""
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = "S"
 
             # Check and retrieve values from failure_model, raising ValueError if any are None
@@ -260,7 +260,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = "C"
-            UdC = ""
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = "0"  # Change this to "T" for Flood distribution type
             UdValue = "0"
             Prob = "0"

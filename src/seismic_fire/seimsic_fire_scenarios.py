@@ -60,6 +60,9 @@ class SeismicFireFaultTree:
 
                 scenario_num = scenario_num + 1
                 self.replace_placeholders(ssc_fault_tree_baseline_copy,room_id,room_name=None,ssc_name=None,ssc_description=None,scenario_num=scenario_num)
+                self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy,room_id,'FIR-SSC',scenario_num)
+
+
 
                 ssc_fault_tree_all_scenarios['inputs'].append(ssc_fault_tree_baseline_copy)
             elif scenario.get('id') == 'ARFM':
@@ -68,20 +71,27 @@ class SeismicFireFaultTree:
                     # Extract the source room IDs from the document
                     source_room_ids = [str(src_id) for src_id in event_document.get("source_room_ids", [])]
                     for source_id in source_room_ids:
+                        scenario_num = scenario_num + 1
                         ssc_fault_tree_baseline_copy = copy.deepcopy(ssc_fault_tree_baseline)
+
+
                         self.replace_placeholders(ssc_fault_tree_baseline_copy, room_id, room_name=None, ssc_name=None,
                                                   ssc_description=None, scenario_num=scenario_num)
-                        scenario_num = scenario_num + 1
+
                         self.modify_ssc_fault_tree_baseline(ssc_fault_tree_baseline_copy,room_id,source_id,ssc_name,scenario_num)
+
                         ssc_fault_tree_all_scenarios['inputs'].append(ssc_fault_tree_baseline_copy)
 
         return ssc_fault_tree_all_scenarios
 
-    def modify_ssc_fault_tree_baseline(self,ssc_fault_tree_baseline_copy,target_id,source_id,ssc_name,scnario_num):
+    def modify_ssc_fault_tree_baseline(self,ssc_fault_tree_baseline_copy,target_id,source_id,ssc_name,scenario_num):
 
         #Modify the house event inside the adjacent room
         self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy,source_id,"HE-FR-BAR","TRUE","T")
         self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy,target_id,"HE-FR-SRC","FALSE","F")
+        self.find_and_append_fault_tree_name(ssc_fault_tree_baseline_copy,target_id,"SFRR",str(scenario_num))
+        self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy, target_id, 'FIR-SSC',
+                                               scenario_num)
         return ssc_fault_tree_baseline_copy
 
     def find_and_update_house_event_state(self, document, room_id, identifier, additional_name, state):
@@ -110,6 +120,64 @@ class SeismicFireFaultTree:
 
         # Call the helper function and return the result
         return search_and_update(document)
+
+    def find_and_update_ssc_failure_model(self, document, room_id, identifier, scenario_num):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_update(d):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Update the 'failure_model' fire_severity and 'name'
+                    scenarios = d['failure_model'].get('scenarios', [])
+
+                    # Ensure scenario_num is a valid index in the scenarios array (starting with 1)
+                    if 1 <= scenario_num <= len(scenarios):
+                        new_fire_severity = scenarios[scenario_num - 1]
+                        d['failure_model']['fire_severity'] = new_fire_severity
+                        d['name'] += "-"+str(scenario_num)
+                        return True  # Found and updated, no need to search further in this branch
+
+                for key, value in d.items():
+                    # Recurse into the dictionary
+                    if search_and_update(value):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each item within
+                for item in d:
+                    if search_and_update(item):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the result
+        return search_and_update(document)
+
+    def find_and_append_fault_tree_name(self, document, room_id, identifier, additional_name):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_update_name(d):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Append the additional name to the 'name' field
+                    d['name'] += additional_name
+                    return True  # Found and updated, no need to search further in this branch
+
+                for key in d:
+                    # Recurse into the dictionary
+                    if search_and_update_name(d[key]):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each dictionary within
+                for item in d:
+                    if search_and_update_name(item):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the result
+        return search_and_update_name(document)
 
     def ssc_fault_tree(self):
         # Get the fire_in_or_to_room_gate template

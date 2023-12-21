@@ -4,7 +4,7 @@ from collections import deque
 from src.mainshock_aftershocks.flag_sets import FlagSetWriter
 from src.aging import AgingModel
 class Node:
-    def __init__(self, logic_type, description, node_type,name,failure_model=None,library = None,procedure = None,id = None,room_id=None):
+    def __init__(self, logic_type, description, node_type,name,failure_model=None,library = None,procedure = None,id = None,room_id=None,correlation_set =None):
         self.logic_type = logic_type
         self.description = description
         self.node_type = node_type
@@ -14,6 +14,7 @@ class Node:
         self.procedure = procedure
         self.id = id
         self.room_id = room_id
+        self.correlation_set= correlation_set
 
         self.children = []
 
@@ -58,8 +59,9 @@ class TreeBuilder:
         procedure = node_data.get("procedure")
         id  = node_data.get("id")
         room_id = node_data.get('room_id')
+        correlation_set = node_data.get('correlation_set')
 
-        node = Node(logic_type, description, node_type, name, failure_model,libray,procedure,id,room_id)
+        node = Node(logic_type, description, node_type, name, failure_model,libray,procedure,id,room_id,correlation_set)
 
         if "inputs" in node_data:
             inputs = node_data["inputs"]
@@ -94,8 +96,9 @@ class TreeBuilder:
         library = node_data.get("library")
         procedure = node_data.get("procedure")
         id = node_data.get("id")
+        correlation_set= node_data.get('correlation_set')
 
-        node = Node(logic_type, description, node_type, name, failure_model, library, procedure, id)
+        node = Node(logic_type, description, node_type, name, failure_model, library, procedure, id,correlation_set)
 
         if "inputs" in node_data:
             inputs = node_data["inputs"]
@@ -172,6 +175,7 @@ class TreeBuilder:
             library=node.library,
             procedure=node.procedure,
             id=node.id,
+            correlation_set= node.correlation_set,
         )
 
         for child in node.children:
