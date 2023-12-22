@@ -426,9 +426,10 @@ class SeismicFireFaultTree:
                 fir_rand_documents = list(self.sources_collection.find({"ssc_id": ssc_id, "type": "FIR-RAND"}))
 
                 # Process fir_rand_documents as needed, e.g., add them to sofr_gate["inputs"]
-
+                print(sofr_seismic_document)
                 sofr_document_seismic_fault_tree = self.seismic_event_instance.create_seismic_fault_tree(
                     sofr_seismic_document)
+
                 self.replace_placeholders(sofr_document_seismic_fault_tree, room_id, room_name,
                                           sofr_seismic_document["name"], sofr_seismic_document["description"])
 
