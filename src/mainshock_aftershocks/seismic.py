@@ -145,7 +145,6 @@ class SeismicEvent:
                         self.replace_placeholders(mainshock_gate_bin, room_id, ssc_name, ssc_description, ms_bin,
                                                   bin_num)
                         self.remove_object_ids(mainshock_gate_bin)
-                        print(mainshock_gate_bin)
                 # Create a copy of mainshock_gate_bin before appending it to the list
                 mainshock_gate_bins.append(copy.deepcopy(mainshock_gate_bin))
 
