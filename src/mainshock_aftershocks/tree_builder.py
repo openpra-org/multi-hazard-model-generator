@@ -45,39 +45,31 @@ class TreeBuilder:
         self.tree = self._build_node(data)
 
     def _build_node(self, node_data):
-
-        if node_data is None:
+        if not isinstance(node_data, dict):
             return None
 
         logic_type = node_data.get("logic_type")
-
-        # Check if logic_type is None or name is None, and if so, return None to ignore this node
         if logic_type is None or node_data.get("name") is None:
             return None
 
-        description = node_data.get("description").upper()
+        description = node_data.get("description", "").upper()
         node_type = node_data.get("type")
-        name = node_data.get("name").upper()
+        name = node_data.get("name", "").upper()
         failure_model = node_data.get("failure_model")  # Failure model is optional
-        libray = node_data.get("library")
+        library = node_data.get("library")
         procedure = node_data.get("procedure")
-        id  = node_data.get("id")
-        room_id = node_data.get('room_id')
-        correlation_set = node_data.get('correlation_set')
+        node_id = node_data.get("id")
+        room_id = node_data.get("room_id")
+        correlation_set = node_data.get("correlation_set")
 
-        node = Node(logic_type, description, node_type, name, failure_model,libray,procedure,id,room_id,correlation_set)
+        node = Node(logic_type, description, node_type, name, failure_model, library, procedure, node_id, room_id,
+                    correlation_set)
 
         if "inputs" in node_data:
             inputs = node_data["inputs"]
             if isinstance(inputs, list):
                 for input_node_data in inputs:
-                    if isinstance(input_node_data, list):
-                        # Handle nested lists
-                        for nested_input_node_data in input_node_data:
-                            input_node = self._build_node(nested_input_node_data)
-                            if input_node:
-                                node.children.append(input_node)
-                    else:
+                    if isinstance(input_node_data, dict):
                         input_node = self._build_node(input_node_data)
                         if input_node:
                             node.children.append(input_node)

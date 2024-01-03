@@ -52,11 +52,13 @@ class SeismicFireFaultTree:
 
             # The first scenario when fire originate in the main room
             if scenario.get('id') == 'MRF':
-                ssc_fault_tree_baseline_copy = copy.deepcopy(ssc_fault_tree_baseline)
+                ssc_fault_tree_baseline_copy = self.remove_none(copy.deepcopy(ssc_fault_tree_baseline))
+
 
                 scenario_num = scenario_num + 1
                 self.replace_placeholders(ssc_fault_tree_baseline_copy, room_id, room_name=None, ssc_name=None,
                                           ssc_description=None, scenario_num=scenario_num)
+
                 self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy, room_id, 'FL-SSC', scenario_num)
 
                 ssc_fault_tree_all_scenarios['inputs'].append(ssc_fault_tree_baseline_copy)
@@ -67,13 +69,15 @@ class SeismicFireFaultTree:
                     source_room_ids = [str(src_id) for src_id in event_document.get("source_room_ids", [])]
                     for source_id in source_room_ids:
                         scenario_num = scenario_num + 1
-                        ssc_fault_tree_baseline_copy = copy.deepcopy(ssc_fault_tree_baseline)
+                        ssc_fault_tree_baseline_copy = self.remove_none(copy.deepcopy(ssc_fault_tree_baseline))
+
 
                         self.replace_placeholders(ssc_fault_tree_baseline_copy, room_id, room_name=None, ssc_name=None,
                                                   ssc_description=None, scenario_num=scenario_num)
-
+                        print(ssc_fault_tree_baseline_copy)
                         self.modify_ssc_fault_tree_baseline(ssc_fault_tree_baseline_copy, room_id, source_id, ssc_name,
                                                             scenario_num)
+                        print(ssc_fault_tree_baseline_copy)
 
                         ssc_fault_tree_all_scenarios['inputs'].append(ssc_fault_tree_baseline_copy)
 
@@ -85,7 +89,8 @@ class SeismicFireFaultTree:
         # Modify the house event inside the adjacent room
         self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy, source_id, "HE-FL-BAR", "TRUE", "T")
         self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy, target_id, "HE-FL-SRC", "FALSE", "F")
-        self.find_and_append_fault_tree_name(ssc_fault_tree_baseline_copy, target_id, "SFR", str(scenario_num))
+        self.find_and_append_fault_tree_name(ssc_fault_tree_baseline_copy, target_id, "SFP", str(scenario_num))
+        self.find_and_append_fault_tree_name(ssc_fault_tree_baseline_copy, target_id, "SFL", str(scenario_num))
         self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy, target_id, 'FL-SSC',
                                                scenario_num)
         return ssc_fault_tree_baseline_copy
@@ -99,6 +104,7 @@ class SeismicFireFaultTree:
                     # Update the 'failure_model' state and 'name'
                     d['failure_model']['state'] = state
                     d['name'] += additional_name
+
                     return True  # Found and updated, no need to search further in this branch
 
                 for key in d:
@@ -333,10 +339,8 @@ class SeismicFireFaultTree:
             # Add sources of fire events
             self.add_sources_of_fire(template_fire_room_gate_json, room_id, room_name)
 
-            # # Add HRA events to fire suppression gate
-            # fire_suppression_gate = copy.deepcopy(self.Flooding_HRA.find_one({"id": "FPRV"}))
-            # self.add_hra_events(fire_suppression_gate, room_id, room_name)
-            #
+
+            #template_fire_room_gate_json["inputs"].append(flood_prevention_gate)
             # template_fire_room_gate_json["inputs"].append(fire_suppression_gate)
             # Remove ObjectId values from the JSON representation
             gate_json_representation = self.remove_object_ids(template_fire_room_gate_json)
@@ -434,6 +438,9 @@ class SeismicFireFaultTree:
             # Add thermal barrier house events
             thermal_barrier_house_event = self.create_barrier_house_event(room_id, room_name)
             template_fire_propagation_gate_json["inputs"].append(thermal_barrier_house_event)
+            # Add barrier collapse house event
+            barrier_collapse_house_event = self.fire_barriers_collection.find_one({"id":"HE-FL-BAR"})
+            template_fire_propagation_gate_json["inputs"].append(barrier_collapse_house_event)
             # Store the gate_json_representation in the dictionary with room_id as the key
             self.propagation_from_one_room_representation[room_id] = template_fire_propagation_gate_json
 
@@ -537,15 +544,17 @@ class SeismicFireFaultTree:
 
         return thermal_barrier_collapse_ft
 
-    def add_hra_events(self, json_obj, room_id, room_name, parent=None, parent_key=None):
+    def create_hra_events(self, room_id, room_name, parent=None, parent_key=None):
+        flood_hra_gate = self.fire_HRA_collection.find_one({"id":"FPRV"})
         hra_document = self.fire_HRA_collection.find_one({"room_id": ObjectId(room_id)}, {'room_id': 0, '_id': 0})
-        self.replace_placeholders(hra_document, room_id, room_name)
+        flood_hra_gate["inputs"].append(hra_document)
+        self.replace_placeholders(flood_hra_gate, room_id, room_name)
         if hra_document is None:
             raise ValueError(f"No HRA event associated with room_id {room_id}")
 
-        json_obj["inputs"].append(hra_document)
 
-        return json_obj
+
+        return flood_hra_gate
 
     def add_sources_of_fire(self, json_obj, room_id, room_name):
 
@@ -699,6 +708,17 @@ class SeismicFireFaultTree:
 
         return node_data
 
+    def remove_none(self, obj):
+        if isinstance(obj, list):
+            return [self.remove_none(item) for item in obj if item is not None]
+        elif isinstance(obj, dict):
+            return {key: self.remove_none(value) for key, value in obj.items() if value is not None}
+        else:
+            return obj
+
+
+
+
 
 # Custom JSON Encoder to handle ObjectId
 class JSONEncoder(json.JSONEncoder):
@@ -706,6 +726,7 @@ class JSONEncoder(json.JSONEncoder):
         if isinstance(o, ObjectId):
             return str(o)  # Convert ObjectId to its string representation
         return super(JSONEncoder, self).default(o)
+
 
 
 def main():
@@ -722,7 +743,7 @@ def main():
 
     ft = TreeBuilder(mongodb_uri, general_db_name)
 
-    json_fault_trees = [ssc_fault_tree_result["CMP-7"]]
+    json_fault_trees = [ssc_fault_tree_result["CMP-8"]]
     for json_fault_tree in json_fault_trees:
         print(json_fault_tree)
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object

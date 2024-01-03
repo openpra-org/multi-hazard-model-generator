@@ -87,7 +87,7 @@ class SeismicFireFaultTree:
 
         #Modify the house event inside the adjacent room
         self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy,source_id,"HE-FR-BAR","TRUE","T")
-        self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy,target_id,"HE-FR-SRC","FALSE","F")
+        self.remove_node_and_children(ssc_fault_tree_baseline_copy,target_id,"SOF-HE")
         self.find_and_append_fault_tree_name(ssc_fault_tree_baseline_copy,target_id,"SFRR",str(scenario_num))
         self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy, target_id, 'FIR-SSC',
                                                scenario_num)
@@ -177,6 +177,33 @@ class SeismicFireFaultTree:
 
         # Call the helper function and return the result
         return search_and_update_name(document)
+
+    def remove_node_and_children(self, document,target_room_id,  target_id):
+        # Helper function to recursively search for the dictionary with the specified id and room_id
+        def search_and_remove(d):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == target_id and d.get('room_id') == target_room_id:
+                    return None  # Remove this dictionary and its children
+
+                # Recurse into the dictionary and update the 'inputs' field
+                inputs = d.get('inputs')
+                if inputs:
+                    if isinstance(inputs, list):
+                        d['inputs'] = [search_and_remove(child) for child in inputs]
+                    elif isinstance(inputs, dict):
+                        d['inputs'] = search_and_remove(inputs)
+
+                return d  # Return the updated dictionary
+
+            elif isinstance(d, list):
+                # Iterate over the list and update each dictionary within
+                return [search_and_remove(item) for item in d]
+
+            return d  # Not found in this branch
+
+        # Call the helper function and return the result
+        return search_and_remove(document)
 
     def ssc_fault_tree(self):
         # Get the fire_in_or_to_room_gate template
@@ -776,6 +803,7 @@ def main():
 
     json_fault_trees = [ssc_fault_tree_result["CMP-FR-12"]]
     for json_fault_tree in json_fault_trees:
+        print(json_fault_tree)
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object
         ft.build_tree(json_fault_tree)
 
