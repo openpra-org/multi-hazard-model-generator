@@ -60,6 +60,7 @@ class SeismicFireFaultTree:
                 scenario_num = scenario_num + 1
                 self.replace_placeholders(ssc_fault_tree_baseline_copy,room_id,room_name=None,ssc_name=None,ssc_description=None,scenario_num=scenario_num)
                 self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy,room_id,'FIR-SSC',scenario_num)
+                self.remove_fault_tree_by_id_and_room_id(ssc_fault_tree_baseline_copy,room_id,"SFRP-MR")
 
 
 
@@ -78,6 +79,9 @@ class SeismicFireFaultTree:
                                                   ssc_description=None, scenario_num=scenario_num)
 
                         self.modify_ssc_fault_tree_baseline(ssc_fault_tree_baseline_copy,room_id,source_id,ssc_name,scenario_num)
+                        # Add thermal barrier collapse in the main room
+
+                        ssc_fault_tree_baseline_copy["inputs"].append(self.thermal_barrier_collapse_ft_dict[room_id])
 
                         ssc_fault_tree_all_scenarios['inputs'].append(ssc_fault_tree_baseline_copy)
 
@@ -88,6 +92,7 @@ class SeismicFireFaultTree:
         #Modify the house event inside the adjacent room
         self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy,source_id,"HE-FR-BAR","TRUE","T")
         self.remove_fault_tree_by_id_and_room_id(ssc_fault_tree_baseline_copy,target_id,"SOF-HE")
+        self.change_fault_tree_logic_type(ssc_fault_tree_baseline_copy,target_id,"SFR-RP","AND")
         self.find_and_append_fault_tree_name(ssc_fault_tree_baseline_copy,target_id,"SFRR",str(scenario_num))
         self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy, target_id, 'FIR-SSC',
                                                scenario_num)
@@ -184,7 +189,6 @@ class SeismicFireFaultTree:
             if isinstance(d, dict):
                 # Check if this dictionary is the one we're looking for
                 if d.get('id') == identifier and d.get('room_id') == room_id:
-                    print("removed")
                     # Remove the dictionary from its parent list or dict.
                     if parent is not None and key is not None:
                         if isinstance(parent, list):
@@ -538,6 +542,7 @@ class SeismicFireFaultTree:
         # Create the seismic fault tree using the updated inputs
         self.replace_placeholders(thermal_barrier_collapse_gate,room_id,room_num)
         json_obj["inputs"].append(thermal_barrier_collapse_gate)
+        self.thermal_barrier_collapse_ft_dict[room_id] = thermal_barrier_collapse_gate
         return json_obj
 
     def create_barrier_house_event(self, room_id, room_num):
@@ -750,6 +755,32 @@ class SeismicFireFaultTree:
 
 
 
+    def change_fault_tree_logic_type(self, document, room_id, identifier, new_logic_type):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_change_logic_type(d):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Change the logic type to the new logic type
+                    d['logic_type'] = new_logic_type
+                    return True  # Found and updated, no need to search further in this branch
+
+                for key in d:
+                    # Recurse into the dictionary
+                    if search_and_change_logic_type(d[key]):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each dictionary within
+                for item in d:
+                    if search_and_change_logic_type(item):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the updated document
+        search_and_change_logic_type(document)
+        return document
 
 
 
@@ -808,7 +839,7 @@ def main():
 
     ft = TreeBuilder(mongodb_uri, general_db_name)
 
-    json_fault_trees = [ssc_fault_tree_result["CMP-FR-12"]]
+    json_fault_trees = [ssc_fault_tree_result["CMP-FR-12"], ssc_fault_tree_result["CMP-FR-9"]]
     for json_fault_tree in json_fault_trees:
         print(json_fault_tree)
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object

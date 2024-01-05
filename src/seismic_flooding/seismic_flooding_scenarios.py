@@ -60,6 +60,8 @@ class SeismicFireFaultTree:
                                           ssc_description=None, scenario_num=scenario_num)
 
                 self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy, room_id, 'FL-SSC', scenario_num)
+                self.remove_fault_tree_by_id_and_room_id(ssc_fault_tree_baseline_copy,room_id,"SFP-MR")
+
 
                 ssc_fault_tree_all_scenarios['inputs'].append(ssc_fault_tree_baseline_copy)
             elif scenario.get('id') == 'ARFM':
@@ -74,10 +76,8 @@ class SeismicFireFaultTree:
 
                         self.replace_placeholders(ssc_fault_tree_baseline_copy, room_id, room_name=None, ssc_name=None,
                                                   ssc_description=None, scenario_num=scenario_num)
-                        print(ssc_fault_tree_baseline_copy)
                         self.modify_ssc_fault_tree_baseline(ssc_fault_tree_baseline_copy, room_id, source_id, ssc_name,
                                                             scenario_num)
-                        print(ssc_fault_tree_baseline_copy)
 
                         ssc_fault_tree_all_scenarios['inputs'].append(ssc_fault_tree_baseline_copy)
 
@@ -88,9 +88,10 @@ class SeismicFireFaultTree:
 
         # Modify the house event inside the adjacent room
         self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy, source_id, "HE-FL-BAR", "TRUE", "T")
-        self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy, target_id, "HE-FL-SRC", "FALSE", "F")
+        self.remove_fault_tree_by_id_and_room_id(ssc_fault_tree_baseline_copy, target_id, "SOF-HE")
         self.find_and_append_fault_tree_name(ssc_fault_tree_baseline_copy, target_id, "SFP", str(scenario_num))
         self.find_and_append_fault_tree_name(ssc_fault_tree_baseline_copy, target_id, "SFL", str(scenario_num))
+        self.change_fault_tree_logic_type(ssc_fault_tree_baseline_copy,target_id, "SFL-RP","AND")
         self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy, target_id, 'FL-SSC',
                                                scenario_num)
         return ssc_fault_tree_baseline_copy
@@ -210,7 +211,6 @@ class SeismicFireFaultTree:
                                       scenario_num=None)
             self.add_ssc_failure_event(room_id, ssc_fault_tree_copy, ssc_document)
             # self.add_combined_fire_inside_propagate_to_ssc_ft(ssc_fault_tree_copy, fire_in_or_to_room_gate_copy)
-            # print(ssc_fault_tree_copy)
             self.remove_object_ids(ssc_fault_tree_copy)
             self.remove_oid(ssc_fault_tree_copy)
 
@@ -339,9 +339,10 @@ class SeismicFireFaultTree:
             # Add sources of fire events
             self.add_sources_of_fire(template_fire_room_gate_json, room_id, room_name)
 
+            # Add flood HRA gate
+            flood_hra_gate=self.create_hra_events(room_id, room_name)
+            template_fire_room_gate_json["inputs"].append(flood_hra_gate)
 
-            #template_fire_room_gate_json["inputs"].append(flood_prevention_gate)
-            # template_fire_room_gate_json["inputs"].append(fire_suppression_gate)
             # Remove ObjectId values from the JSON representation
             gate_json_representation = self.remove_object_ids(template_fire_room_gate_json)
 
@@ -717,7 +718,63 @@ class SeismicFireFaultTree:
             return obj
 
 
+    def remove_fault_tree_by_id_and_room_id(self, document, room_id, identifier):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_remove(d, parent=None, key=None):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Remove the dictionary from its parent list or dict.
+                    if parent is not None and key is not None:
+                        if isinstance(parent, list):
+                            parent.remove(d)
+                        elif isinstance(parent, dict):
+                            del parent[key]
+                    return True  # Found and removed, no need to search further in this branch
 
+                for key in d:
+                    # Recurse into the dictionary
+                    if search_and_remove(d[key], d, key):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each dictionary within
+                for item in d:
+                    if search_and_remove(item, d, d.index(item)):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the updated document
+        search_and_remove(document)
+        return document
+
+    def change_fault_tree_logic_type(self, document, room_id, identifier, new_logic_type):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_change_logic_type(d):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Change the logic type to the new logic type
+                    d['logic_type'] = new_logic_type
+                    return True  # Found and updated, no need to search further in this branch
+
+                for key in d:
+                    # Recurse into the dictionary
+                    if search_and_change_logic_type(d[key]):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each dictionary within
+                for item in d:
+                    if search_and_change_logic_type(item):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the updated document
+        search_and_change_logic_type(document)
+        return document
 
 
 # Custom JSON Encoder to handle ObjectId
