@@ -85,7 +85,7 @@ class SeismicFireFaultTree:
 
     def modify_ssc_fault_tree_baseline(self, ssc_fault_tree_baseline_copy, target_id, source_id, ssc_name,
                                        scenario_num):
-
+        print("target", target_id, ",   source", source_id)
         # Modify the house event inside the adjacent room
         self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy, source_id, "HE-FL-BAR", "TRUE", "T")
         self.remove_fault_tree_by_id_and_room_id(ssc_fault_tree_baseline_copy, target_id, "SOF-HE")
@@ -440,8 +440,8 @@ class SeismicFireFaultTree:
             thermal_barrier_house_event = self.create_barrier_house_event(room_id, room_name)
             template_fire_propagation_gate_json["inputs"].append(thermal_barrier_house_event)
             # Add barrier collapse house event
-            barrier_collapse_house_event = self.fire_barriers_collection.find_one({"id":"HE-FL-BAR"})
-            template_fire_propagation_gate_json["inputs"].append(barrier_collapse_house_event)
+            #barrier_collapse_house_event = self.fire_barriers_collection.find_one({"id":"HE-FL-BAR"})
+            #template_fire_propagation_gate_json["inputs"].append(barrier_collapse_house_event)
             # Store the gate_json_representation in the dictionary with room_id as the key
             self.propagation_from_one_room_representation[room_id] = template_fire_propagation_gate_json
 
@@ -498,7 +498,7 @@ class SeismicFireFaultTree:
             return self.barrier_house_event_dict[room_id]
 
         # Fetch barrier house event template
-        barrier_house_event_temp = copy.deepcopy(self.fire_barriers_collection.find_one({"id": "HE-FR-BAR"}))
+        barrier_house_event_temp = copy.deepcopy(self.fire_barriers_collection.find_one({"id": "HE-FL-BAR"}))
 
         # Replace placeholders and update the dictionary
         self.replace_placeholders(barrier_house_event_temp, room_id, room_num)
