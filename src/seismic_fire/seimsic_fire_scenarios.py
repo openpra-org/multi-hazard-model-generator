@@ -183,37 +183,6 @@ class SeismicFireFaultTree:
         # Call the helper function and return the result
         return search_and_update_name(document)
 
-    def remove_fault_tree_by_id_and_room_id(self, document, room_id, identifier):
-        # This helper function will be used to recursively search for the dictionary
-        def search_and_remove(d, parent=None, key=None):
-            if isinstance(d, dict):
-                # Check if this dictionary is the one we're looking for
-                if d.get('id') == identifier and d.get('room_id') == room_id:
-                    # Remove the dictionary from its parent list or dict.
-                    if parent is not None and key is not None:
-                        if isinstance(parent, list):
-                            parent.remove(d)
-                        elif isinstance(parent, dict):
-                            del parent[key]
-                    return True  # Found and removed, no need to search further in this branch
-
-                for key in d:
-                    # Recurse into the dictionary
-                    if search_and_remove(d[key], d, key):
-                        return True  # Propagate the positive search result up the call stack
-
-            elif isinstance(d, list):
-                # Iterate over the list and search each dictionary within
-                for item in d:
-                    if search_and_remove(item, d, d.index(item)):
-                        return True  # Propagate the positive search result up
-
-            return False  # Not found in this branch
-
-        # Call the helper function and return the updated document
-        search_and_remove(document)
-        return document
-
 
 
     def ssc_fault_tree(self):
@@ -609,18 +578,16 @@ class SeismicFireFaultTree:
 
         return json_obj
 
-    def add_sources_of_fire(self, json_obj, room_id,room_name):
-
+    def add_sources_of_fire(self, json_obj, room_id, room_name):
         # Fetch the sources of fire house event gate
         sofr_he_gate = copy.deepcopy(self.fire_gate_temp.find_one({"id": "SOF-HE"}))
         # Add the sources of fire house event to the sofr_he_gate
         sofr_he_gate["inputs"].append(copy.deepcopy(self.sources_collection.find_one({"id": "HE-FR-SRC"})))
-        self.replace_placeholders(sofr_he_gate,room_id,room_name)
+        self.replace_placeholders(sofr_he_gate, room_id, room_name)
 
         # Fetch the SOFR gate from the MongoDB collection
-        sofr_gate= copy.deepcopy(self.fire_gate_temp.find_one({"id":"SOFRR"}))
-
-        self.replace_placeholders(sofr_gate,room_id,room_name)
+        sofr_gate = copy.deepcopy(self.fire_gate_temp.find_one({"id": "SOFRR"}))
+        self.replace_placeholders(sofr_gate, room_id, room_name)
 
         # Fetch SOFR documents from the MongoDB collection
         sofr_seismic_documents = list(self.sources_collection.find({"room_id": ObjectId(room_id), "type": "SBE"}))
@@ -628,22 +595,37 @@ class SeismicFireFaultTree:
         for sofr_seismic_document in sofr_seismic_documents:
             ssc_id = sofr_seismic_document.get("ssc_id")
             if ssc_id:
-                # Find documents in sources_collection with the same ssc_id and type "FIR-RAND"
+                # Fetch the SOFEQ (seismic ignition of fire sources gate)
+                sofeq_gate = copy.deepcopy(self.fire_gate_temp.find_one({"id": "SOFEQ"}))
+                # Find conditional ignition of fire source document
+                fir_ign_cond_document = self.sources_collection.find_one({"ssc_id": ssc_id, "type": "FRBE"})
+
+                # Check if fir_ign_cond_document is None and raise an error if so
+                if fir_ign_cond_document is None:
+                    raise ValueError(
+                        f"The seismic conditional ignition probability for SSC with ID {ssc_id} is not found in the database.")
+
+                # Find seismic documents in sources_collection with the same ssc_id and type "FIR-RAND"
                 fir_rand_documents = list(self.sources_collection.find({"ssc_id": ssc_id, "type": "FIR-RAND"}))
 
                 # Process fir_rand_documents as needed, e.g., add them to sofr_gate["inputs"]
-
                 sofr_document_seismic_fault_tree = self.seismic_event_instance.create_seismic_fault_tree(
                     sofr_seismic_document)
                 self.replace_placeholders(sofr_document_seismic_fault_tree, room_id, room_name,
                                           sofr_seismic_document["name"], sofr_seismic_document["description"])
 
-                # Append sofr_document_seismic_fault_tree to sofr_gate["inputs"]
-                sofr_gate["inputs"].append(sofr_document_seismic_fault_tree)
+                # Append sofr_document_seismic_fault_tree to sofeq_gate["inputs"]
+                sofeq_gate["inputs"].append(sofr_document_seismic_fault_tree)
+                # Append fir_ign_cond_document to sofeq_gate["inputs"]
+                sofeq_gate["inputs"].append(fir_ign_cond_document)
 
+                self.replace_placeholders(sofeq_gate, room_id, room_name, fir_ign_cond_document["name"],
+                                          fir_ign_cond_document["description"])
+
+                # Add sofeq_gate to sofr_gate
+                sofr_gate["inputs"].append(sofeq_gate)
                 # Append fir_rand_documents to sofr_gate
                 for fir_rand_document in fir_rand_documents:
-
                     self.replace_placeholders(fir_rand_document, room_id, room_name, fir_rand_document["name"],
                                               fir_rand_document["description"])
                     sofr_gate["inputs"].append(fir_rand_document)
@@ -816,6 +798,38 @@ class SeismicFireFaultTree:
             node_data = [self.remove_id_keys(item) for item in node_data]
 
         return node_data
+
+
+    def remove_fault_tree_by_id_and_room_id(self, document, room_id, identifier):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_remove(d, parent=None, key=None):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Remove the dictionary from its parent list or dict.
+                    if parent is not None and key is not None:
+                        if isinstance(parent, list):
+                            parent.remove(d)
+                        elif isinstance(parent, dict):
+                            del parent[key]
+                    return True  # Found and removed, no need to search further in this branch
+
+                for key in d:
+                    # Recurse into the dictionary
+                    if search_and_remove(d[key], d, key):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each dictionary within
+                for item in d:
+                    if search_and_remove(item, d, d.index(item)):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the updated document
+        search_and_remove(document)
+        return document
 
 
 # Custom JSON Encoder to handle ObjectId

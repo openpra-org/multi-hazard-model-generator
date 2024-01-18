@@ -125,6 +125,49 @@ class BasicEventWriter:
             raise ValueError(
                 f"Invalid distribution_type for fire model or failure_model is None for node '{node.name}' with description '{node.description}'")
 
+    def beta_distribution_model(self, node, file):
+        # Check if the node has the failure_model with distribution_type "B"
+        failure_model = node.failure_model
+
+        if failure_model and failure_model.get("distribution_type") == "B":
+            # Define the parameters based on the provided criteria
+            name = node.name  # assuming 'name' is an attribute of the 'Node' object
+            FdT, UdC, UdT = "1", getattr(node, "correlation_set", "") or "", "B"
+
+            # Check if UdValue is specified as 'beta' or 'variance'
+            UdValue = failure_model.get("beta")
+
+            if UdValue is None:
+                # If UdValue is not specified, calculate beta from mean and variance
+                mean, variance = failure_model.get("mean"), failure_model.get("variance")
+
+                # Check for None values and raise ValueError with a detailed error message
+                if None in (mean, variance):
+                    error_params = [param for param, value in
+                                    [("mean", mean), ("variance", variance)]
+                                    if value is None]
+                    raise ValueError(
+                        f"Some parameters in failure_model are None for node '{name}' with description '{node.description}': {error_params}")
+
+                # Calculate beta from mean and variance
+                UdValue = mean / (variance * (1 - mean))
+
+            # Define other parameters
+            Prob, Lambda, Tau, Mission, Init, PF, UdValue2, Calc_Prob, Freq = (
+                failure_model.get("mean"), "0.000E+000", "0.000E+000", "0.000E+000", "",
+                "", "0.000E+000", "", ""
+            )
+
+            Analysis_Type, Phase_Type, Project = "RANDOM", "CD", "G-PWR"
+
+            # Write the information to the file
+            file.write(
+                f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
+            )
+        else:
+            raise ValueError(
+                f"Invalid distribution_type for beta distribution model or failure_model is None for node '{node.name}' with description '{node.description}'")
+
     def value_event_model(self, node, file):
         if (
                 node.failure_model
@@ -307,9 +350,8 @@ class BasicEventWriter:
             self.point_value_event_model(node, file)
         elif node.node_type == "FIR-RAND":
             self.point_value_event_model(node, file)
-
-
-
+        elif node.node_type == "FRBE":
+            self.beta_distribution_model(node,file)
         elif node.node_type == "FIR_LN":
             self.fire_model(node,file)
 
