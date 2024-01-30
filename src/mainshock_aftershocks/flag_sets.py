@@ -74,4 +74,25 @@ class FlagSetWriter:
                 if flag_set != self.flag_sets.find()[self.flag_sets.count_documents({}) - 1]:
                     f.write("^EOS\n")
 
+    def main(self):
+        # Define file names and output directory
+        file_name_csa = "csa_file.CSA"
+        file_name_csd = "csd_file.CSD"
+        file_name_csi = "csi_file.CSI"
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        output_directory =os.path.join(current_dir,'output')
 
+        # Write CSA, CSD, and CSI files
+        self.write_csa(file_name_csa, output_directory)
+        self.write_csd(file_name_csd, output_directory)
+        self.write_csi(file_name_csi, output_directory)
+
+
+if __name__ == "__main__":
+    # Convert MongoDB flag set data to SAPHIRE MAR-D
+    mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/'
+    db_name = 'MultiHazards_PRA_General'
+
+
+    flag_set_writer = FlagSetWriter(mongodb_uri, db_name)
+    flag_set_writer.main()
