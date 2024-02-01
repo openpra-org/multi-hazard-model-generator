@@ -603,20 +603,21 @@ def main():
 
     cursor = db["components"].find({})
 
+    current_dir = os.path.dirname(os.path.abspath(__file__))
 
     for ssc_document in cursor:
         # Usage example
         tree = SeismicEvent(mongodb_uri, general_db_name)
-        ft_builder = TreeBuilder()
+        ft_builder = TreeBuilder(mongodb_uri, general_db_name)
         seismic_tree = tree.create_seismic_fault_tree(ssc_document)
         ft_builder.build_tree(seismic_tree)
         # Assuming seismic_tree is a dictionary, you might need to modify the line above
 
     # ft_builder.visualize_tree()
-    ft_builder.write_mard("seismic")
+    ft_builder.write_mard("seismic",current_dir)
 
     # Create a TreeBuilder instance from the seismic_tree dictionary
-    seismic_tree_builder = TreeBuilder()
+    #seismic_tree_builder = TreeBuilder()
 
     #seismic_tree_builder.tree = seismic_tree_builder.convert_dict_to_tree(seismic_tree)
     # Extract the subtree using the correct instance

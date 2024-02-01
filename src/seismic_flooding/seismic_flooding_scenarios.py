@@ -3,7 +3,7 @@ from src.imports import *
 from src.mainshock_aftershocks.seismic import SeismicEvent
 
 
-class SeismicFireFaultTree:
+class SeismicFloodingFaultTree:
     def __init__(self, mongodb_uri, db_name, seismic_event_instance):
         self.client = MongoClient(mongodb_uri)
         self.db = self.client[db_name]
@@ -793,7 +793,7 @@ def main():
     seismic_event_instance = SeismicEvent(mongodb_uri, general_db_name)
 
     # Usage example
-    tree = SeismicFireFaultTree(mongodb_uri, fire_db_name, seismic_event_instance)
+    tree = SeismicFloodingFaultTree(mongodb_uri, fire_db_name, seismic_event_instance)
 
     # Call the scenario method
     ssc_fault_tree_result = tree.ssc_fault_tree_scenarios()
