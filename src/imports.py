@@ -2,6 +2,7 @@
 
 import pandas as pd
 import os
+import scipy.stats as stats
 import json
 import numpy as np
 import re
