@@ -354,6 +354,9 @@ class BasicEventWriter:
             self.beta_distribution_model(node,file)
         elif node.node_type == "FIR_LN":
             self.fire_model(node,file)
+        elif node.node_type == "TSU-CP":
+            self.point_value_event_model(node, file)
+
 
 
 
