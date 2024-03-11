@@ -91,9 +91,41 @@ class FloodModel:
                 raise ValueError(
                     f"Invalid distribution_type for flood model or failure_model is None for node '{node.name}' with description '{node.description}'")
 
+        def tsunami_wave_conditional_prob(self, node, file):
+            if (
+                    node.failure_model
+                    and node.failure_model.get("distribution_type") == "P"
+            ):
+                # Define the parameters based on the provided criteria
+                name = node.name
+                FdT = "1"
+                UdC = "0.000E+000"
+                UdT = ""
+                UdValue = "0.000E+000"
+                Prob = node.failure_model.get("prob")
+                Lambda = "0.000E+000"
+                Tau = "0.000E+000"
+                Mission = "0.000E+000"
+                Init = ""
+                PF = ""
+                UdValue2 = "0.000E+000"
+                Calc_Prob = node.failure_model.get("prob")
+                Freq = ""
+                Analysis_Type = "RANDOM"
+                Phase_Type = "CD"
+                Project = "G-PWR"
+
+                # Write the information to the file
+                file.write(
+                    f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
+                )
+            else:
+                raise ValueError("Invalid distribution_type for Point Value event")
+
+
     def handle_flood(self, node, file):
         failure_model = node.failure_model
-        if node.type == "FLD":
+        if node.node_type == "FLD":
             flood_type = failure_model.get("flood_type")
             if flood_type:
                 if flood_type == "Internal":
@@ -105,10 +137,13 @@ class FloodModel:
                         tsunami.tsunami_inundation_failure(node, file)
                     elif failure_model.get("failure_mode") == "flow_force":
                         tsunami.tsunami_flow_velocity_failure(node, file)
+                    elif failure_model.get("failure_mode") == "TSU-CP":
+                        tsunami.tsunami_wave_conditional_prob(node, file)
+
 
                 else:
                     raise ValueError("Invalid flood type specified in the failure model")
             else:
                 raise ValueError("Missing or invalid 'flood_type' in the failure model")
         else:
-            raise ValueError(f"Invalid type '{node.type}' for flood model")
+            raise ValueError(f"Invalid type '{node.node_type}' for flood model")

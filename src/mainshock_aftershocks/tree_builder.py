@@ -423,9 +423,9 @@ class TreeBuilder:
         self.write_bei(file_name, output_dir)
         self.write_ftl(file_name, output_dir)
         self.write_bec(file_name, output_dir)
-        self.flag_set_writer.write_csd(file_name, output_dir)
-        self.flag_set_writer.write_csa(file_name, output_dir)
-        self.flag_set_writer.write_csi(file_name, output_dir)
+        # self.flag_set_writer.write_csd(file_name, output_dir)
+        # self.flag_set_writer.write_csa(file_name, output_dir)
+        # self.flag_set_writer.write_csi(file_name, output_dir)
 
 
 # Custom JSON Encoder to handle ObjectId

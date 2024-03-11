@@ -1,5 +1,6 @@
 import copy
 from src.mainshock_aftershocks.tree_builder import TreeBuilder
+from src.mainshock_aftershocks.flag_sets import FlagSetWriter
 from pymongo import MongoClient
 from src.imports import *
 import unittest
@@ -123,8 +124,12 @@ class TsunamiFaultTree:
         self.replace_placeholders(mwh_he, self.room_id, self.ssc_name, None, self.ms_vector[pga_bin_num-1], pga_bin_num,mwh_bin_num,self.mwh_vector[mwh_bin_num-1]
                         )
 
+
         mwh_gate["inputs"].append(ms_he)
         mwh_gate["inputs"].append(mwh_he)
+
+
+        self.create_change_set(ms_he,mwh_he,pga_bin_num,mwh_bin_num)
 
 
         # Calculate probability of mwh given an earthquake PGA bin
@@ -137,7 +142,7 @@ class TsunamiFaultTree:
         pga_bin_value = self.ms_vector[pga_bin_num - 1]
         mwh_probability = self.calculate_mwh_probability(pga_bin_value, max_wave_height_range)
 
-        mwh_conditional_probability_event = copy.deepcopy(self.tsunami_events_collection.find_one({"type": "TSU-CP"}))
+        mwh_conditional_probability_event = copy.deepcopy(self.tsunami_events_collection.find_one({"id": "TSU-CP"}))
         if mwh_conditional_probability_event is None:
             raise ValueError("Conditional probability event template 'TSU-CP' not found.")
 
@@ -236,6 +241,37 @@ class TsunamiFaultTree:
 
         return obj
 
+    def create_change_set(self, ms_he, mwh_he, pga_bin_num, mwh_bin_num):
+        # Fetch the change set template from the database
+        ms_mwh_cs_template = self.tsunami_events_collection.find_one({"type": "TSU-CS"})
+        if ms_mwh_cs_template is None:
+            raise ValueError("Change set template 'TSU-CS' not found.")
+
+        # Create a copy of the change set template
+        ms_mwh_cs = copy.deepcopy(ms_mwh_cs_template)
+
+        # Generate a new ObjectId for the document
+        ms_mwh_cs["_id"] = ObjectId()
+
+        # Add events and change rules to the change set document
+        ms_he_name = ms_he.get("name")
+        mwh_he_name = mwh_he.get("name")
+        if ms_he_name is None or mwh_he_name is None:
+            raise ValueError("Event name not found in one of the documents.")
+
+        ms_mwh_cs["events"].append(str(ms_he_name))
+        ms_mwh_cs["change_rules"].append("T")
+        ms_mwh_cs["events"].append(str(mwh_he_name))
+        ms_mwh_cs["change_rules"].append("T")
+
+        # Replace placeholders in the change set document
+        self.replace_placeholders(ms_mwh_cs, None, None, None, None, pga_bin_num, mwh_bin_num)
+
+        # Access the Tsunami_change_sets collection in the seismic_flooding_db database
+        tsunami_change_sets_collection = self.seismic_flooding_db["Tsunami_change_sets"]
+
+        # Insert the ms_mwh_cs document into the Tsunami_change_sets collection
+        tsunami_change_sets_collection.insert_one(ms_mwh_cs)
 
 def main():
     # MongoDB connection parameters
@@ -269,5 +305,8 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     ft.write_mard("tsunami", current_dir)
 
+    # Change sets for tsunami events
+    flag_set_writer = FlagSetWriter(mongodb_uri, general_input_db_name,seismic_flooding_db_name)
+    flag_set_writer.main(current_dir)
 if __name__ == "__main__":
     main()

@@ -1,5 +1,6 @@
 from src.imports import *
-
+from src.mainshock_aftershocks.flood_models import FloodModel
+from src.mainshock_aftershocks.HRA_models import HumanReliabilityModels
 class BasicEventWriter:
     def __init__(self):
         pass
@@ -203,10 +204,15 @@ class BasicEventWriter:
     def HRA_event_model(self, node, file):
         if (
                 node.failure_model
-                and node.failure_model.get("distribution_type") == "P"
+                or node.failure_model.get("distribution_type") == "P"
                 and node.node_type == "FLD_HRA" or node.node_type == "FIR_HRA"
         ):
             # Define the parameters based on the provided criteria
+            if node.failure_model.get("HRA_model") == "IDHEAS":
+                HRA_model_instance = HumanReliabilityModels(node)
+                node=HRA_model_instance.idheas_model()
+
+
             name = node.name
             FdT = "1"
             UdC = "0.000E+000"
@@ -338,8 +344,10 @@ class BasicEventWriter:
             self.compound_event_information_model(node, file)
         elif node.node_type == "ASFE":
             self.value_event_model(node, file)
-        elif node.node_type == "FLD_LN":
-            self.flood_model(node, file)
+        elif node.node_type == "FLD":
+
+            flood_model_instance = FloodModel(node)
+            flood_model_instance.handle_flood(node, file)
         elif node.node_type == "FLD_HRA":
             self.HRA_event_model(node, file)
         elif node.node_type == "FIR_HRA":
