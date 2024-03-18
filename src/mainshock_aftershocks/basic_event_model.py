@@ -207,11 +207,21 @@ class BasicEventWriter:
                 or node.failure_model.get("distribution_type") == "P"
                 and node.node_type == "FLD_HRA" or node.node_type == "FIR_HRA"
         ):
+
             # Define the parameters based on the provided criteria
             if node.failure_model.get("HRA_model") == "IDHEAS":
-                HRA_model_instance = HumanReliabilityModels(node)
-                node=HRA_model_instance.idheas_model()
+                # Create an instance of HumanReliabilityModels
+                hra_model_instance = HumanReliabilityModels(node)
 
+                # Access the IDHEASModel and call its idheas_model method
+                node = hra_model_instance.IDHEASModel.idheas_model()
+
+            elif node.failure_model.get("HRA_model") == "SPAR-H":
+                # Create an instance of SPARHModel
+                hra_model_instance = HumanReliabilityModels(node)
+
+                # Access the IDHEASModel and call its idheas_model method
+                node = hra_model_instance.SPARHModel.process_failure_model()
 
             name = node.name
             FdT = "1"
