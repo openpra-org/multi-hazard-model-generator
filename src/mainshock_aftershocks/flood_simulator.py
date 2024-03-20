@@ -1,14 +1,13 @@
 import matplotlib.pyplot as plt
-import math
 import numpy as np
 
 class Room:
-    def __init__(self, name, water_level=0.0,height=float('inf')):
+    def __init__(self, name, water_level=0.0, dimensions=(1.0, 1.0, 1.0)):
         self.name = name
         self.water_level = water_level  # in meters
         self.sources = []
         self.sinks = []
-        self.height = height  # Maximum height water can reach within the room
+        self.length, self.width, self.height = dimensions  # Dimensions of the room (m)
 
     def add_source(self, source):
         self.sources.append(source)
@@ -17,9 +16,11 @@ class Room:
         self.sinks.append(sink)
 
     def update_water_level(self, inflow, outflow, time_step):
-        # Update water level considering time step
-        self.water_level += (inflow - outflow) * time_step  # m³/s * s = m³
+        # Calculate the volume of the room
+        room_area = self.length * self.width
 
+        # Update water level considering time step and room volume
+        self.water_level += ((inflow - outflow) / room_area) * time_step
 
 class WaterSource:
     def __init__(self, flow_rate_func):
@@ -28,14 +29,12 @@ class WaterSource:
     def calculate_flow(self, time):
         return self.flow_rate_func(time)  # m³/s
 
-
 class Sink:
     def __init__(self, sink_rate_func):
         self.sink_rate_func = sink_rate_func  # function: time -> sink rate (m³/s)
 
     def calculate_sink(self, time):
         return self.sink_rate_func(time)  # m³/s
-
 
 class Simulation:
     def __init__(self, rooms):
@@ -63,24 +62,35 @@ class Simulation:
         self.current_time += time_step  # Update the simulation time
         return simulation_continue  # Return the status of whether to continue the simulation
 
-    def simulate_until_stable(self, max_iterations=10000, tolerance=0.01, time_step=1):
+    def simulate_until_convergence(self, max_iterations=10000, convergence_threshold=0.001, consecutive_iterations=10,
+                                   time_step=1):
         time_steps = []
-        for _ in range(max_iterations):
-            prev_water_levels = [room.water_level for room in self.rooms]
-            simulation_continue = self.simulate_one_step(time_step)
-            current_water_levels = [room.water_level for room in self.rooms]
+        consecutive_convergence_count = 0
+        prev_water_levels = {room.name: float('inf') for room in self.rooms}  # Initialize with infinity for all rooms
 
-            # Check if water levels have stabilized or simulation should stop
-            if (not simulation_continue) or all(abs(prev - current) < tolerance for prev, current in zip(prev_water_levels, current_water_levels)):
+        for _ in range(max_iterations):
+            self.simulate_one_step(time_step)
+            current_water_levels = {room.name: room.water_level for room in self.rooms}
+
+            # Check convergence for each room
+            room_convergence = [
+                abs(prev_water_levels[room_name] - current_water_levels[room_name]) < convergence_threshold for
+                room_name in prev_water_levels.keys()]
+
+            if all(room_convergence):
+                consecutive_convergence_count += 1
+            else:
+                consecutive_convergence_count = 0
+
+            if consecutive_convergence_count >= consecutive_iterations:
                 break
 
-            time_steps.append(self.current_time)  # Record time step
+            prev_water_levels = current_water_levels.copy()  # Update previous water levels
 
-        # Ensure time_steps and water_levels have the same length
-        for room_name, water_levels in self.water_levels.items():
-            self.water_levels[room_name] = water_levels[:len(time_steps)]
+        # Record time steps
+        time_steps = [i * time_step for i in range(len(self.water_levels[self.rooms[0].name]))]
 
-        return time_steps  # Return time steps for plotting
+        return time_steps
 
     def plot_water_level(self, time_steps):
         for room_name, water_levels in self.water_levels.items():
@@ -95,22 +105,21 @@ class Simulation:
 # Define dynamic flow rate and sink rate functions
 def dynamic_flow_rate(time):
     # Define time-dependent flow rate (example: increasing over time)
-    return 0.01*np.exp(-time*0.03)
+    return 0.3 * np.exp(-time * 0.01)
 
 def dynamic_sink_rate(time):
     # Define time-dependent sink rate
-    if time < 250:
-        return 0.0005  # Before 250 seconds, sink rate is constant
+    if time < 200:
+        return 0.05  # Before 250 seconds, sink rate is constant
     else:
-        return 0.01  # After 250 seconds, sink rate increases
-
+        return 0.1+0.1*np.exp(-0.005*time)  # After 250 seconds, sink rate increases
 
 # Example Usage
-room1 = Room("Room B -Floor 1", water_level=0.0,height=4)
+room1 = Room("Room B -Floor 1", water_level=0.0, dimensions=(3, 3, 4))
 room1.add_source(WaterSource(flow_rate_func=dynamic_flow_rate))
 room1.add_sink(Sink(sink_rate_func=dynamic_sink_rate))
 
 rooms = [room1]
 simulation = Simulation(rooms)
-time_steps = simulation.simulate_until_stable(time_step=40)  # Assume 1 minute time step
+time_steps = simulation.simulate_until_convergence(time_step=5)  # Adjust time step as needed
 simulation.plot_water_level(time_steps)
