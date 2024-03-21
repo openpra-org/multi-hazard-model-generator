@@ -16,3 +16,6 @@ from bson import json_util
 from pymongo import MongoClient
 import copy
 import warnings
+from scipy.integrate import quad
+import ast  # Module for evaluating the function string
+import math

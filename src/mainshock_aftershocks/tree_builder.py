@@ -361,12 +361,15 @@ class TreeBuilder:
             def collect_nodes(node):
                 if node.logic_type == "BE":
                     if node.name not in self.unique_BEI_names:
-                        # Call write_bei_data method with file and node arguments
-                        if consider_aging:
+                        # Check if the node has an aging model
+                        aging_model = node.failure_model.get("aging_model")
+                        if consider_aging and aging_model:
                             self.aging_model_updater.update_failure_model(node)
-                        bei_writer.write_bei_data(node, f)
-
-                        self.unique_BEI_names.add(node.name)
+                            bei_writer.write_bei_data(node, f)
+                            self.unique_BEI_names.add(node.name)
+                        else:
+                            bei_writer.write_bei_data(node, f)
+                            self.unique_BEI_names.add(node.name)
                 for child in node.children:
                     collect_nodes(child)
 
