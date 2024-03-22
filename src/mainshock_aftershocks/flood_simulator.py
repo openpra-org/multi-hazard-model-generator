@@ -22,6 +22,8 @@ class Room:
         # Update water level considering time step and room volume
         self.water_level += ((inflow - outflow) / room_area) * time_step
 
+
+
 class WaterSource:
     def __init__(self, flow_rate_func):
         self.flow_rate_func = flow_rate_func  # function: time -> flow rate (m³/s)
@@ -60,9 +62,20 @@ class Simulation:
             self.water_levels[room.name].append(room.water_level)
 
         self.current_time += time_step  # Update the simulation time
-        return simulation_continue  # Return the status of whether to continue the simulation
 
-    def simulate_until_convergence(self, max_iterations=10000, convergence_threshold=0.001, consecutive_iterations=10,
+        # Check if water levels of adjacent rooms are close, turn off sink in room 1 if necessary
+        if len(self.rooms) == 2:  # Assume only two rooms for simplicity
+            room1, room2 = self.rooms
+            if abs(room1.water_level - room2.water_level) < 0.1:
+                # Turn off sink in room 1
+                room1.sinks[0].sink_rate_func = lambda time: 0
+                # Synchronize water levels of room A with room B
+                room2_delta = room1.water_level - room2.water_level
+                room2.water_level += room2_delta
+
+        return simulation_continue
+
+    def simulate_until_convergence(self, max_iterations=10000, convergence_threshold=0.0001, consecutive_iterations=10,
                                    time_step=1):
         time_steps = []
         consecutive_convergence_count = 0
@@ -93,33 +106,40 @@ class Simulation:
         return time_steps
 
     def plot_water_level(self, time_steps):
+        # Increase font sizes and make them bold
+        plt.xlabel('Time (seconds)', fontsize=14, fontweight='bold')
+        plt.ylabel('Water Level (meters)', fontsize=14, fontweight='bold')
+        plt.title('Water Level Evolution in Rooms', fontsize=16, fontweight='bold')
+
         for room_name, water_levels in self.water_levels.items():
             plt.plot(time_steps, water_levels, label=room_name)
-        plt.xlabel('Time (seconds)')
-        plt.ylabel('Water Level (meters)')
-        plt.title('Water Level Evolution in Rooms')
         plt.legend()
         plt.grid(True)
         plt.show()
 
+
 # Define dynamic flow rate and sink rate functions
 def dynamic_flow_rate(time):
     # Define time-dependent flow rate (example: increasing over time)
-    return 0.3 * np.exp(-time * 0.01)
+    return 0.250 * np.exp(-time * 0.01)
 
 def dynamic_sink_rate(time):
     # Define time-dependent sink rate
     if time < 200:
-        return 0.05  # Before 250 seconds, sink rate is constant
+        return 0.01  # Before 250 seconds, sink rate is constant
     else:
         return 0.1+0.1*np.exp(-0.005*time)  # After 250 seconds, sink rate increases
 
 # Example Usage
-room1 = Room("Room B -Floor 1", water_level=0.0, dimensions=(3, 3, 4))
+room1 = Room("Room B -Floor 1", water_level=0.2, dimensions=(3, 3, 4))
 room1.add_source(WaterSource(flow_rate_func=dynamic_flow_rate))
 room1.add_sink(Sink(sink_rate_func=dynamic_sink_rate))
 
-rooms = [room1]
+# Define another room adjacent to the first one
+room2 = Room("Room A -Floor 1", water_level=0.0, dimensions=(3, 3, 4))
+room2.add_source(WaterSource(flow_rate_func=lambda time: room1.sinks[0].calculate_sink(time)))  # Set inflow from room1's sink
+
+rooms = [room1, room2]
 simulation = Simulation(rooms)
 time_steps = simulation.simulate_until_convergence(time_step=5)  # Adjust time step as needed
 simulation.plot_water_level(time_steps)
