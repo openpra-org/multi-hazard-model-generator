@@ -121,7 +121,7 @@ class Simulation:
 # Define dynamic flow rate and sink rate functions
 def dynamic_flow_rate(time):
     # Define time-dependent flow rate (example: increasing over time)
-    return 0.250 * np.exp(-time * 0.01)
+    return 0.10 * np.exp(-time * 0.005)
 
 def dynamic_sink_rate(time):
     # Define time-dependent sink rate
