@@ -360,7 +360,7 @@ class SeismicFireFaultTree:
             fire_suppression_gate["inputs"].append(fire_detection_event)
 
             fire_suppression_gate["inputs"].append(fire_sprinkler_failure_gate)
-
+            self.replace_placeholders(fire_suppression_gate,room_id,room_name)
             template_fire_room_gate_json["inputs"].append(fire_suppression_gate)
             # Remove ObjectId values from the JSON representation
             gate_json_representation = self.remove_object_ids(template_fire_room_gate_json)

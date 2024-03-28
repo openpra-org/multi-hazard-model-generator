@@ -19,7 +19,7 @@ class TwoRoomWaterFlow:
         self.beta_u = beta_u
 
     def source_flow_rate_room1(self, time):
-        return 0.4 * np.exp(-0.005 * time)
+        return 0.25 * np.exp(-0.005 * time)+0.05
 
     def source_flow_rate_room2(self, time):
         return 0.0000005 * time

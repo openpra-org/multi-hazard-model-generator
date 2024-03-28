@@ -85,7 +85,7 @@ class SeismicFloodingFaultTree:
 
     def modify_ssc_fault_tree_baseline(self, ssc_fault_tree_baseline_copy, target_id, source_id, ssc_name,
                                        scenario_num):
-        print("target", target_id, ",   source", source_id)
+        #print("target", target_id, ",   source", source_id)
         # Modify the house event inside the adjacent room
         self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy, source_id, "HE-FL-BAR", "TRUE", "T")
         self.remove_fault_tree_by_id_and_room_id(ssc_fault_tree_baseline_copy, target_id, "SOF-HE")
@@ -136,7 +136,7 @@ class SeismicFloodingFaultTree:
                     # Ensure scenario_num is a valid index in the scenarios array (starting with 1)
                     if 1 <= scenario_num <= len(scenarios):
                         new_flood_level = scenarios[scenario_num - 1]
-                        d['failure_model']['flood_level'] = new_flood_level
+                        d['failure_model']['maximum_flood_level'] = new_flood_level
                         d['name'] += "-" + str(scenario_num)
                         return True  # Found and updated, no need to search further in this branch
 
@@ -469,7 +469,7 @@ class SeismicFloodingFaultTree:
         # Adding thermal barrier collapse due to fire
         thermal_barrier_collapse_gate["inputs"].append(
             self.fire_barriers_collection.find_one(
-                {"room_id": ObjectId(room_id), "type": "FLD_LN"},
+                {"room_id": ObjectId(room_id), "type": "FLD"},
                 {'room_id': 0, '_id': 0}
             )
         )
