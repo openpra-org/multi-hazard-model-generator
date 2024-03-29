@@ -178,7 +178,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = node.failure_model.get("id")
-            UdC = "0.000E+000"
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = ""
             UdValue = "0.000E+000"
             Prob = node.failure_model.get("value")
@@ -225,7 +225,7 @@ class BasicEventWriter:
 
             name = node.name
             FdT = "1"
-            UdC = "0.000E+000"
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = ""
             UdValue = "0.000E+000"
             Prob = node.failure_model.get("prob")
@@ -259,7 +259,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = "1"
-            UdC = "0.000E+000"
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = ""
             UdValue = "0.000E+000"
             Prob = node.failure_model.get("prop")
@@ -289,7 +289,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = node.failure_model.get("state")
-            UdC = "0.000E+000"
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = ""
             UdValue =  "0.000E+000"
             Prob =  "0.000E+000"

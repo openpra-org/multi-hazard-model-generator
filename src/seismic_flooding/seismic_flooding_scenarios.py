@@ -800,7 +800,7 @@ def main():
 
     ft = TreeBuilder(mongodb_uri, general_db_name)
 
-    json_fault_trees = [ssc_fault_tree_result["CMP-8"]]
+    json_fault_trees = [ssc_fault_tree_result["CMP-7"]]
     for json_fault_tree in json_fault_trees:
         print(json_fault_tree)
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object

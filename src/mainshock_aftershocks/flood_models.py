@@ -11,7 +11,7 @@ class FloodModel:
             if failure_model.get("distribution_type") == "FL" and failure_model.get("flood_type") == "Internal":
                 name = node.name
                 FdT = "J"
-                UdC = node.correlation_set if hasattr(node, "correlation_set") else ""
+                UdC = getattr(node, "correlation_set", "") or ""
                 UdT = "S"
                 UdValue = failure_model.get("beta_r_uncertainty")
                 Prob = failure_model.get("median_flood_depth")
@@ -49,7 +49,7 @@ class FloodModel:
             if failure_model.get("distribution_type") == "FL" and failure_model.get("flood_type") == "Internal":
                 name = node.name
                 FdT = "J"
-                UdC = node.correlation_set if hasattr(node, "correlation_set") else ""
+                UdC = getattr(node, "correlation_set", "") or ""
                 UdT = "S"
                 UdValue = failure_model.get("beta_r_uncertainty")
                 Prob = failure_model.get("median_flood_depth")
@@ -89,7 +89,7 @@ class FloodModel:
             if failure_model.get("distribution_type") == "FL" and failure_model.get("flood_type") == "Internal":
                 name = node.name
                 FdT = "J"
-                UdC = node.correlation_set if hasattr(node, "correlation_set") else ""
+                UdC = getattr(node, "correlation_set", "") or ""
                 UdT = "S"
                 UdValue = failure_model.get("beta_r_uncertainty")
                 Prob = failure_model.get("median_velocity_capacity")  # Changed parameter name
@@ -144,7 +144,7 @@ class FloodModel:
             if failure_model.get("distribution_type") == "FL" and failure_model.get("flood_type") == "Tsunami":
                 name = node.name
                 FdT = "J"
-                UdC = node.correlation_set if hasattr(node, "correlation_set") else ""
+                UdC = getattr(node, "correlation_set", "") or ""
                 UdT = "S"
                 UdValue = failure_model.get("beta_r_uncertainty")
                 Prob = failure_model.get("median_water_capacity")
@@ -181,7 +181,7 @@ class FloodModel:
             if failure_model.get("distribution_type") == "FL" and failure_model.get("flood_type") == "Tsunami":
                 name = node.name
                 FdT = "J"
-                UdC = node.correlation_set if hasattr(node, "correlation_set") else ""
+                UdC = getattr(node, "correlation_set", "") or ""
                 UdT = "S"
                 UdValue = failure_model.get("beta_r_uncertainty")
                 Prob = failure_model.get("median_velocity_capacity")  # Changed parameter name
