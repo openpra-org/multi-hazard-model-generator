@@ -145,7 +145,7 @@ if __name__ == "__main__":
     model = TwoRoomWaterFlow()
     duration = 200  # Duration of simulation in seconds
     time_step = 0.5  # Time step for simulation
-    iterations = 250  # Number of simulation iterations
+    iterations = 100  # Number of simulation iterations
     max_levels_room1, max_levels_room2 = model.simulate_multiple(iterations=iterations, duration=duration,
                                                                  time_step=time_step)
 
