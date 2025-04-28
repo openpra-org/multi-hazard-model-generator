@@ -1,11 +1,10 @@
-# OpenPRA Multi-Hazard PRA Model Generator 
+# Multi-Hazard PRA Model Generator 
+
+<a href="https://doi.org/10.5281/10.5281/zenodo.15298045"><img src="https://zenodo.org/badge/DOI/10.5281/10.5281/zenodo.15298045.svg" alt="DOI"></a>
 
 OpenPRA Multi-Hazard PRA Model Generator is a command-line based generator written in Python. 
 
 OpenMHA Generator is capable of generating multi-hazard event trees and fault trees from internal events PRA models with appropriate event trees and fault trees.
-
-### Capabilities
-- ...
 
 # Table of contents
 1. [Testing and Coverage](#testing)
