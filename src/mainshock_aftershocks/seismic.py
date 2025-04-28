@@ -19,7 +19,6 @@ class SeismicEvent:
 
 
     def create_seismic_fault_tree(self,ssc_document):
-
         output_dir = "output"
         aftershocks_data = self.get_aftershocks_data(self.general_input)
 
@@ -52,7 +51,6 @@ class SeismicEvent:
             # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
             # with open(json_filename, 'w') as json_file:
             #     json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
-
             return main_seismic_fault_tree_copy
 
 
@@ -72,14 +70,10 @@ class SeismicEvent:
             # main_seismic_fault_tree_copy["inputs"]= aftershock_ft_temp
             main_seismic_fault_tree_copy["inputs"] = mainshock_ft_temp
 
-            # Create a unique JSON filename based on room_id and ssc_name
-            json_filename = os.path.join(output_dir, f'{room_id}-{ssc_name}.json')
 
-            # Serialize and write the aftershock_main_gate_temp_copy to the JSON file
-            with open(json_filename, 'w') as json_file:
-                json.dump(main_seismic_fault_tree_copy, json_file, indent=4)
 
-            return main_seismic_fault_tree_copy
+
+        return main_seismic_fault_tree_copy
 
 
 
@@ -119,41 +113,40 @@ class SeismicEvent:
 
         return mainshock_ft_template
 
-
-
     def create_mainshock_pga_gate(self, ssc_document, ms_vector_values):
         room_id = str(ssc_document.get("room_id"))
         ssc_name = str(ssc_document.get("name"))
         ssc_description = str(ssc_document.get("description"))
+        correlation_set = str(ssc_document.get("correlation_set", ""))  # Default to "" if not present
         mainshock_gate_bins = []  # List to store the mainshock_gate_bin objects
+
         # Check if amplification is set to "Yes" in general_input
         amplification_enabled = (
                 self.general_input.find_one({}, {"Mainshock.amplification": 1}).get("Mainshock", {}).get(
                     "amplification", "") == "Yes"
         )
 
-
-
         if 'type' in ssc_document and ssc_document['type'] == 'SBE':
             for bin_num, ms_bin in enumerate(ms_vector_values, start=1):
                 mainshock_gate_bin = self.mainshock_ft.find_one({"id": "MSGT"})
+
 
                 for input in mainshock_gate_bin['inputs']:
                     if 'id' in input and input['id'] == 'MS-BE':
                         failure_model_params = ssc_document.get("failure_model", {})
                         if amplification_enabled:
-                            failure_model_params["pga"] = ms_bin*failure_model_params["amplification"]
+                            failure_model_params["pga"] = ms_bin * failure_model_params.get("amplification", 1)
                         else:
                             failure_model_params["pga"] = ms_bin
 
                         input["failure_model"] = failure_model_params
+                        input.setdefault("correlation_set", correlation_set)
+
                         self.replace_placeholders(mainshock_gate_bin, room_id, ssc_name, ssc_description, ms_bin,
                                                   bin_num)
                         self.remove_object_ids(mainshock_gate_bin)
-
                 # Create a copy of mainshock_gate_bin before appending it to the list
                 mainshock_gate_bins.append(copy.deepcopy(mainshock_gate_bin))
-
 
         return mainshock_gate_bins
 
@@ -610,20 +603,21 @@ def main():
 
     cursor = db["components"].find({})
 
+    current_dir = os.path.dirname(os.path.abspath(__file__))
 
     for ssc_document in cursor:
         # Usage example
         tree = SeismicEvent(mongodb_uri, general_db_name)
-        ft_builder = TreeBuilder()
+        ft_builder = TreeBuilder(mongodb_uri, general_db_name)
         seismic_tree = tree.create_seismic_fault_tree(ssc_document)
         ft_builder.build_tree(seismic_tree)
         # Assuming seismic_tree is a dictionary, you might need to modify the line above
 
     # ft_builder.visualize_tree()
-    ft_builder.write_mard("seismic")
+    ft_builder.write_mard("seismic",current_dir)
 
     # Create a TreeBuilder instance from the seismic_tree dictionary
-    seismic_tree_builder = TreeBuilder()
+    #seismic_tree_builder = TreeBuilder()
 
     #seismic_tree_builder.tree = seismic_tree_builder.convert_dict_to_tree(seismic_tree)
     # Extract the subtree using the correct instance

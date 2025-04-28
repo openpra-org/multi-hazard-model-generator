@@ -1,5 +1,6 @@
 from src.imports import *
-
+from src.mainshock_aftershocks.flood_models import FloodModel
+from src.mainshock_aftershocks.HRA_models import HumanReliabilityModels
 class BasicEventWriter:
     def __init__(self):
         pass
@@ -13,7 +14,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = "J"
-            UdC = ""
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = "S"
             UdValue = node.failure_model.get("beta_r_uncertainty", "")
             Prob = node.failure_model.get("median_seismic_acceleration", "")
@@ -47,7 +48,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = "J"
-            UdC = ""
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = "S"  # Change this to "T" for Flood distribution type
 
             # Check and retrieve values from failure_model, raising ValueError if any are None
@@ -85,12 +86,11 @@ class BasicEventWriter:
     def fire_model(self, node, file):
         # Check if the node has the failure_model with distribution_type "FR"
         failure_model = node.failure_model
-        print(failure_model)
         if failure_model and failure_model.get("distribution_type") == "FL":
             # Define the parameters based on the provided criteria
             name = node.name  # assuming 'name' is an attribute of the 'Node' object
             FdT = "J"
-            UdC = ""
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = "S"
 
             # Check and retrieve values from failure_model, raising ValueError if any are None
@@ -126,6 +126,49 @@ class BasicEventWriter:
             raise ValueError(
                 f"Invalid distribution_type for fire model or failure_model is None for node '{node.name}' with description '{node.description}'")
 
+    def beta_distribution_model(self, node, file):
+        # Check if the node has the failure_model with distribution_type "B"
+        failure_model = node.failure_model
+
+        if failure_model and failure_model.get("distribution_type") == "B":
+            # Define the parameters based on the provided criteria
+            name = node.name  # assuming 'name' is an attribute of the 'Node' object
+            FdT, UdC, UdT = "1", getattr(node, "correlation_set", "") or "", "B"
+
+            # Check if UdValue is specified as 'beta' or 'variance'
+            UdValue = failure_model.get("beta")
+
+            if UdValue is None:
+                # If UdValue is not specified, calculate beta from mean and variance
+                mean, variance = failure_model.get("mean"), failure_model.get("variance")
+
+                # Check for None values and raise ValueError with a detailed error message
+                if None in (mean, variance):
+                    error_params = [param for param, value in
+                                    [("mean", mean), ("variance", variance)]
+                                    if value is None]
+                    raise ValueError(
+                        f"Some parameters in failure_model are None for node '{name}' with description '{node.description}': {error_params}")
+
+                # Calculate beta from mean and variance
+                UdValue = mean / (variance * (1 - mean))
+
+            # Define other parameters
+            Prob, Lambda, Tau, Mission, Init, PF, UdValue2, Calc_Prob, Freq = (
+                failure_model.get("mean"), "0.000E+000", "0.000E+000", "0.000E+000", "",
+                "", "0.000E+000", "", ""
+            )
+
+            Analysis_Type, Phase_Type, Project = "RANDOM", "CD", "G-PWR"
+
+            # Write the information to the file
+            file.write(
+                f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
+            )
+        else:
+            raise ValueError(
+                f"Invalid distribution_type for beta distribution model or failure_model is None for node '{node.name}' with description '{node.description}'")
+
     def value_event_model(self, node, file):
         if (
                 node.failure_model
@@ -135,7 +178,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = node.failure_model.get("id")
-            UdC = "0.000E+000"
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = ""
             UdValue = "0.000E+000"
             Prob = node.failure_model.get("value")
@@ -161,13 +204,28 @@ class BasicEventWriter:
     def HRA_event_model(self, node, file):
         if (
                 node.failure_model
-                and node.failure_model.get("distribution_type") == "P"
+                or node.failure_model.get("distribution_type") == "P"
                 and node.node_type == "FLD_HRA" or node.node_type == "FIR_HRA"
         ):
+
             # Define the parameters based on the provided criteria
+            if node.failure_model.get("HRA_model") == "IDHEAS":
+                # Create an instance of HumanReliabilityModels
+                hra_model_instance = HumanReliabilityModels(node)
+
+                # Access the IDHEASModel and call its idheas_model method
+                node = hra_model_instance.IDHEASModel.idheas_model()
+
+            elif node.failure_model.get("HRA_model") == "SPAR-H":
+                # Create an instance of SPARHModel
+                hra_model_instance = HumanReliabilityModels(node)
+
+                # Access the IDHEASModel and call its idheas_model method
+                node = hra_model_instance.SPARHModel.process_failure_model()
+
             name = node.name
             FdT = "1"
-            UdC = "0.000E+000"
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = ""
             UdValue = "0.000E+000"
             Prob = node.failure_model.get("prob")
@@ -201,7 +259,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = "1"
-            UdC = "0.000E+000"
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = ""
             UdValue = "0.000E+000"
             Prob = node.failure_model.get("prop")
@@ -221,7 +279,6 @@ class BasicEventWriter:
             file.write(
                 f"{name},{FdT},{UdC},{UdT},{UdValue},{Prob},{Lambda},{Tau},{Mission},{Init},{PF},{UdValue2},{Calc_Prob},{Freq},{Analysis_Type},{Phase_Type},{Project}\n"
             )
-            print(node.failure_model.get("prop"))
         else:
             raise ValueError("Invalid distribution_type for Point Value event")
 
@@ -232,7 +289,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = node.failure_model.get("state")
-            UdC = "0.000E+000"
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = ""
             UdValue =  "0.000E+000"
             Prob =  "0.000E+000"
@@ -262,7 +319,7 @@ class BasicEventWriter:
             # Define the parameters based on the provided criteria
             name = node.name
             FdT = "C"
-            UdC = ""
+            UdC = getattr(node, "correlation_set", "") or ""
             UdT = "0"  # Change this to "T" for Flood distribution type
             UdValue = "0"
             Prob = "0"
@@ -287,29 +344,23 @@ class BasicEventWriter:
             raise ValueError("Invalid compound event")
 
     def write_bei_data(self, node, file):
-        print("write_bei_data accessed")
-        print(f"Node Type: {node.node_type}")
+
 
         if node.node_type == "SBE":
-            print("SBE branch")
             self.seismic_model(node, file)
         elif node.node_type == "HE":
-            print("HE branch")
             self.house_event_model(node, file)
         elif node.node_type == "ASCE":
-            print("ASCE branch")
             self.compound_event_information_model(node, file)
         elif node.node_type == "ASFE":
-            print("ASFE branch")
             self.value_event_model(node, file)
-        elif node.node_type == "FLD_LN":
-            print("FLD_LN branch")
-            self.flood_model(node, file)
+        elif node.node_type == "FLD":
+
+            flood_model_instance = FloodModel(node)
+            flood_model_instance.handle_flood(node, file)
         elif node.node_type == "FLD_HRA":
-            print("FLD_HRA branch")
             self.HRA_event_model(node, file)
         elif node.node_type == "FIR_HRA":
-            print("FIR_HRA branch")
             self.HRA_event_model(node, file)
         elif node.node_type == "FIR-DET":
             self.point_value_event_model(node,file)
@@ -317,16 +368,13 @@ class BasicEventWriter:
             self.point_value_event_model(node, file)
         elif node.node_type == "FIR-RAND":
             self.point_value_event_model(node, file)
-
-
-
+        elif node.node_type == "FRBE":
+            self.beta_distribution_model(node,file)
         elif node.node_type == "FIR_LN":
             self.fire_model(node,file)
+        elif node.node_type == "TSU-CP":
+            self.point_value_event_model(node, file)
 
-        else:
-            print("Other branch")
-
-    # ...
 
 
 

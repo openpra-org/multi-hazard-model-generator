@@ -1,5 +1,6 @@
 from src.imports import *
 
+
 class AgingModel:
     def __init__(self, mongo_uri, database):
         self.client = MongoClient(mongo_uri)
@@ -12,6 +13,8 @@ class AgingModel:
             if aging_type:
                 if aging_type == "linear":
                     self.linear_aging(node)
+                elif aging_type == "function":
+                    self.function_based_aging_model(node)
                 elif aging_type == "corrosion":
                     self.corrosion_aging(node.id, node.failure_model["aging_model"])
                 elif aging_type == "fatigue":
@@ -46,6 +49,45 @@ class AgingModel:
             new_value = current_value + aging_rates * time
             node.failure_model[affected_parameter] = new_value
 
+    def function_based_aging_model(self, node):
+        # Extract necessary parameters from the node
+        aging_model = node.failure_model.get("aging_model", {})
+        aging_rates = aging_model.get("aging_rate", [])  # Default to empty list if not present
+
+        # Retrieve the global time from the General_Input document
+        general_input_doc = self.General_Input.find_one({})
+        global_time = general_input_doc.get("Aging", {}).get("time")
+
+        # Use the global time if present, otherwise use the default time from the node
+        time = global_time if global_time is not None else aging_model.get("time", 10)
+
+        # Get function expression
+        function_str = aging_model.get("expression", "")
+
+        # Iterate over affected parameters and update them
+        affected_parameters = aging_model.get("affected_parameters", [])
+        for parameter, rate in zip(affected_parameters, aging_rates):
+            current_value = node.failure_model.get(parameter, 0)
+            new_value = self.evaluate_function(function_str, time, rate, current_value)
+            node.failure_model[parameter] = new_value
+
+    def evaluate_function(self, function_str, time, aging_rate, affected_parameter):
+        try:
+            # Define the variable dictionary
+            variables = {
+                'time': time,
+                'aging_rate': aging_rate,
+                'affected_parameter': affected_parameter,
+                'math': math
+            }
+
+            # Evaluate the expression with the variables
+            result = eval(function_str, variables)
+            return result
+        except Exception as e:
+            print(f"Error evaluating function expression: {e}")
+            return None
+
     def corrosion_aging(self, ssc_id, parameters):
         # Placeholder for corrosion aging calculation
         pass
@@ -53,3 +95,5 @@ class AgingModel:
     def fatigue_aging(self, ssc_id, parameters):
         # Placeholder for fatigue aging calculation
         pass
+
+

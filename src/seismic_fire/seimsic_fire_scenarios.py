@@ -18,8 +18,10 @@ class SeismicFireFaultTree:
         self.fire_propagation_events = self.db["fire_propagation"]
         self.ssc_fault_tree_template =  self.db["ssc_ft_temp"]
         self.fire_sprinkler_collection = self.db["fire_sprinkler"]
+        self.fire_scenarios = self.db["fire_scenarios"]
 
-        self.fire_room_gate_representations = {}  # Dictionary to store fire room gate_json_representation by room_id
+
+        self.fire_room_gate_representations = {}  # Dictionary to store fire room gate_json_reprdesentation by room_id
         self.propagation_from_one_room_representation = {}  # Dictionary to store fire propagation from one room gate_json_representation by room_id
         self.fire_propagation_to_room_representation = {}  # Dictionary to store fire propagation to one room gate_json by room_id
         self.source_room_ids_dict = {}   # Dictionary to store source room ids with target room as key
@@ -29,6 +31,158 @@ class SeismicFireFaultTree:
 
         self.ssc_ft_representation = {}
         self.seismic_event_instance = seismic_event_instance
+
+    def ssc_fault_tree_scenarios(self):
+        self.fire_room_gate()
+        self.propagation_from_one_room_gate()
+        self.propagation_to_room()
+        ssc_fault_tree_result = self.ssc_fault_tree()
+        return ssc_fault_tree_result
+
+
+    def create_scenario_fault_tree(self,ssc_fault_tree_baseline,ssc_document,room_num):
+
+        room_id = str(ssc_document.get("room_id"))
+        ssc_name = str(ssc_document.get("name"))
+        ssc_description = str(ssc_document.get("description"))
+        # Create a copy of the ssc_fault_tree that takes all the possible scenarios
+        ssc_fault_tree_all_scenarios = copy.deepcopy(self.ssc_fault_tree_template.find_one({"id": "SSC-FR-FT"}))
+        self.replace_placeholders(ssc_fault_tree_all_scenarios,room_id,room_num,ssc_name,ssc_description,scenario_num=None)
+        # Copy the ssc_fault_tree baseline document
+        cursor = self.fire_scenarios.find({})
+        scenario_num = 0
+        for scenario in cursor:
+
+            # The first scenario when fire originate in the main room
+            if scenario.get('id') == 'MRF':
+                ssc_fault_tree_baseline_copy = copy.deepcopy(ssc_fault_tree_baseline)
+
+                scenario_num = scenario_num + 1
+                self.replace_placeholders(ssc_fault_tree_baseline_copy,room_id,room_name=None,ssc_name=None,ssc_description=None,scenario_num=scenario_num)
+                self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy,room_id,'FIR-SSC',scenario_num)
+                self.remove_fault_tree_by_id_and_room_id(ssc_fault_tree_baseline_copy,room_id,"SFRP-MR")
+
+
+
+                ssc_fault_tree_all_scenarios['inputs'].append(ssc_fault_tree_baseline_copy)
+            elif scenario.get('id') == 'ARFM':
+                event_document = self.fire_propagation_events.find_one({"target_room_id": ObjectId(room_id)})
+                if event_document:
+                    # Extract the source room IDs from the document
+                    source_room_ids = [str(src_id) for src_id in event_document.get("source_room_ids", [])]
+                    for source_id in source_room_ids:
+                        scenario_num = scenario_num + 1
+                        ssc_fault_tree_baseline_copy = copy.deepcopy(ssc_fault_tree_baseline)
+
+
+                        self.replace_placeholders(ssc_fault_tree_baseline_copy, room_id, room_name=None, ssc_name=None,
+                                                  ssc_description=None, scenario_num=scenario_num)
+
+                        self.modify_ssc_fault_tree_baseline(ssc_fault_tree_baseline_copy,room_id,source_id,ssc_name,scenario_num)
+                        # Add thermal barrier collapse in the main room
+
+                        ssc_fault_tree_baseline_copy["inputs"].append(self.thermal_barrier_collapse_ft_dict[room_id])
+
+                        ssc_fault_tree_all_scenarios['inputs'].append(ssc_fault_tree_baseline_copy)
+
+        return ssc_fault_tree_all_scenarios
+
+    def modify_ssc_fault_tree_baseline(self,ssc_fault_tree_baseline_copy,target_id,source_id,ssc_name,scenario_num):
+
+        #Modify the house event inside the adjacent room
+        self.find_and_update_house_event_state(ssc_fault_tree_baseline_copy,source_id,"HE-FR-BAR","TRUE","T")
+        self.remove_fault_tree_by_id_and_room_id(ssc_fault_tree_baseline_copy,target_id,"SOF-HE")
+        self.change_fault_tree_logic_type(ssc_fault_tree_baseline_copy,target_id,"SFR-RP","AND")
+        self.find_and_append_fault_tree_name(ssc_fault_tree_baseline_copy,target_id,"SFRR",str(scenario_num))
+        self.find_and_update_ssc_failure_model(ssc_fault_tree_baseline_copy, target_id, 'FIR-SSC',
+                                               scenario_num)
+        return ssc_fault_tree_baseline_copy
+
+    def find_and_update_house_event_state(self, document, room_id, identifier, additional_name, state):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_update(d):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Update the 'failure_model' state and 'name'
+                    d['failure_model']['state'] = state
+                    d['name'] += additional_name
+                    return True  # Found and updated, no need to search further in this branch
+
+                for key in d:
+                    # Recurse into the dictionary
+                    if search_and_update(d[key]):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each dictionary within
+                for item in d:
+                    if search_and_update(item):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the result
+        return search_and_update(document)
+
+    def find_and_update_ssc_failure_model(self, document, room_id, identifier, scenario_num):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_update(d):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Update the 'failure_model' fire_severity and 'name'
+                    scenarios = d['failure_model'].get('scenarios', [])
+
+                    # Ensure scenario_num is a valid index in the scenarios array (starting with 1)
+                    if 1 <= scenario_num <= len(scenarios):
+                        new_fire_severity = scenarios[scenario_num - 1]
+                        d['failure_model']['fire_severity'] = new_fire_severity
+                        d['name'] += "-"+str(scenario_num)
+                        return True  # Found and updated, no need to search further in this branch
+
+                for key, value in d.items():
+                    # Recurse into the dictionary
+                    if search_and_update(value):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each item within
+                for item in d:
+                    if search_and_update(item):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the result
+        return search_and_update(document)
+
+    def find_and_append_fault_tree_name(self, document, room_id, identifier, additional_name):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_update_name(d):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Append the additional name to the 'name' field
+                    d['name'] += additional_name
+                    return True  # Found and updated, no need to search further in this branch
+
+                for key in d:
+                    # Recurse into the dictionary
+                    if search_and_update_name(d[key]):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each dictionary within
+                for item in d:
+                    if search_and_update_name(item):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the result
+        return search_and_update_name(document)
+
 
 
     def ssc_fault_tree(self):
@@ -47,7 +201,7 @@ class SeismicFireFaultTree:
             room_num = room_info.get("name") if room_info else None
 
             # Create a copy of the ssc_fault_tree_template
-            ssc_fault_tree_copy = copy.deepcopy(self.ssc_fault_tree_template.find_one())
+            ssc_fault_tree_copy = copy.deepcopy(self.ssc_fault_tree_template.find_one({"id": "SSC-FR-SCEN-FT"}))
 
             # Build the fire_in_or_to_room_gate and add it to ssc_fault_tree_copy
             fire_in_or_to_room_gate_copy = copy.deepcopy(fire_in_or_to_room_gate)
@@ -55,16 +209,20 @@ class SeismicFireFaultTree:
             ssc_fault_tree_copy["inputs"].append(fire_in_or_to_room_gate_copy)
 
             # Replace placeholders and add failure event
-            self.replace_placeholders(ssc_fault_tree_copy, room_id, room_num, ssc_name, ssc_document.get("description"))
+            self.replace_placeholders(ssc_fault_tree_copy, room_id, room_num, ssc_name, ssc_document.get("description"),scenario_num=None)
             self.add_ssc_failure_event(room_id, ssc_fault_tree_copy, ssc_document)
             #self.add_combined_fire_inside_propagate_to_ssc_ft(ssc_fault_tree_copy, fire_in_or_to_room_gate_copy)
             #print(ssc_fault_tree_copy)
             self.remove_object_ids(ssc_fault_tree_copy)
             self.remove_oid(ssc_fault_tree_copy)
-            self.remove_id_keys(ssc_fault_tree_copy)
+
+
+            #self.remove_id_keys(ssc_fault_tree_copy)
+
+            scenario_fault_tree = self.create_scenario_fault_tree(ssc_fault_tree_copy,ssc_document,room_num)
+
             # Store the result in the ssc_ft_representation dictionary
-            self.ssc_ft_representation[ssc_name] = ssc_fault_tree_copy
-            print(ssc_fault_tree_copy)
+            self.ssc_ft_representation[ssc_name] = scenario_fault_tree
 
         return self.ssc_ft_representation
 
@@ -189,13 +347,21 @@ class SeismicFireFaultTree:
 
             # Replace placeholders in the JSON object
             self.replace_placeholders(template_fire_room_gate_json, room_id, room_name)
-            # Add HRA events
 
-            self.add_hra_events(template_fire_room_gate_json, room_id,room_name)
             # Add sources of fire events
             self.add_sources_of_fire(template_fire_room_gate_json, room_id,room_name)
+
             fire_sprinkler_failure_gate=self.create_fire_sprinkler_failure_gate(room_id,room_name)
-            template_fire_room_gate_json["inputs"].append(fire_sprinkler_failure_gate)
+            # Add HRA events to fire suppression gate
+            fire_suppression_gate = copy.deepcopy(self.fire_sprinkler_collection.find_one({"id": "FSUP"}))
+            self.add_hra_events(fire_suppression_gate, room_id, room_name)
+            # Add fire detection event
+            fire_detection_event = copy.deepcopy(self.fire_sprinkler_collection.find_one({"type": "FIR-DET"}))
+            fire_suppression_gate["inputs"].append(fire_detection_event)
+
+            fire_suppression_gate["inputs"].append(fire_sprinkler_failure_gate)
+            self.replace_placeholders(fire_suppression_gate,room_id,room_name)
+            template_fire_room_gate_json["inputs"].append(fire_suppression_gate)
             # Remove ObjectId values from the JSON representation
             gate_json_representation = self.remove_object_ids(template_fire_room_gate_json)
 
@@ -292,7 +458,7 @@ class SeismicFireFaultTree:
             # Add sources of fire gate in the JSON object
             self.add_seismic_fire_room(template_fire_propagation_gate_json,room_id)
             # Add fire barrier collapse gate
-            #self.add_fire_barrier_collapse(template_fire_propagation_gate_json,room_id,room_name)
+            self.add_fire_barrier_collapse(template_fire_propagation_gate_json,room_id,room_name)
             # Add thermal barrier house events
             thermal_barrier_house_event =self.create_barrier_house_event(room_id,room_name)
             template_fire_propagation_gate_json["inputs"].append(thermal_barrier_house_event)
@@ -345,6 +511,7 @@ class SeismicFireFaultTree:
         # Create the seismic fault tree using the updated inputs
         self.replace_placeholders(thermal_barrier_collapse_gate,room_id,room_num)
         json_obj["inputs"].append(thermal_barrier_collapse_gate)
+        self.thermal_barrier_collapse_ft_dict[room_id] = thermal_barrier_collapse_gate
         return json_obj
 
     def create_barrier_house_event(self, room_id, room_num):
@@ -411,10 +578,16 @@ class SeismicFireFaultTree:
 
         return json_obj
 
-    def add_sources_of_fire(self, json_obj, room_id,room_name):
+    def add_sources_of_fire(self, json_obj, room_id, room_name):
+        # Fetch the sources of fire house event gate
+        sofr_he_gate = copy.deepcopy(self.fire_gate_temp.find_one({"id": "SOF-HE"}))
+        # Add the sources of fire house event to the sofr_he_gate
+        sofr_he_gate["inputs"].append(copy.deepcopy(self.sources_collection.find_one({"id": "HE-FR-SRC"})))
+        self.replace_placeholders(sofr_he_gate, room_id, room_name)
+
         # Fetch the SOFR gate from the MongoDB collection
-        sofr_gate= copy.deepcopy(self.fire_gate_temp.find_one({"id":"SOFRR"}))
-        self.replace_placeholders(sofr_gate,room_id,room_name)
+        sofr_gate = copy.deepcopy(self.fire_gate_temp.find_one({"id": "SOFRR"}))
+        self.replace_placeholders(sofr_gate, room_id, room_name)
 
         # Fetch SOFR documents from the MongoDB collection
         sofr_seismic_documents = list(self.sources_collection.find({"room_id": ObjectId(room_id), "type": "SBE"}))
@@ -422,29 +595,44 @@ class SeismicFireFaultTree:
         for sofr_seismic_document in sofr_seismic_documents:
             ssc_id = sofr_seismic_document.get("ssc_id")
             if ssc_id:
-                # Find documents in sources_collection with the same ssc_id and type "FIR-RAND"
+                # Fetch the SOFEQ (seismic ignition of fire sources gate)
+                sofeq_gate = copy.deepcopy(self.fire_gate_temp.find_one({"id": "SOFEQ"}))
+                # Find conditional ignition of fire source document
+                fir_ign_cond_document = self.sources_collection.find_one({"ssc_id": ssc_id, "type": "FRBE"})
+
+                # Check if fir_ign_cond_document is None and raise an error if so
+                if fir_ign_cond_document is None:
+                    raise ValueError(
+                        f"The seismic conditional ignition probability for SSC with ID {ssc_id} is not found in the database.")
+
+                # Find seismic documents in sources_collection with the same ssc_id and type "FIR-RAND"
                 fir_rand_documents = list(self.sources_collection.find({"ssc_id": ssc_id, "type": "FIR-RAND"}))
 
                 # Process fir_rand_documents as needed, e.g., add them to sofr_gate["inputs"]
-                print(sofr_seismic_document)
                 sofr_document_seismic_fault_tree = self.seismic_event_instance.create_seismic_fault_tree(
                     sofr_seismic_document)
-
                 self.replace_placeholders(sofr_document_seismic_fault_tree, room_id, room_name,
                                           sofr_seismic_document["name"], sofr_seismic_document["description"])
 
-                # Append sofr_document_seismic_fault_tree to sofr_gate["inputs"]
-                sofr_gate["inputs"].append(sofr_document_seismic_fault_tree)
+                # Append sofr_document_seismic_fault_tree to sofeq_gate["inputs"]
+                sofeq_gate["inputs"].append(sofr_document_seismic_fault_tree)
+                # Append fir_ign_cond_document to sofeq_gate["inputs"]
+                sofeq_gate["inputs"].append(fir_ign_cond_document)
 
+                self.replace_placeholders(sofeq_gate, room_id, room_name, fir_ign_cond_document["name"],
+                                          fir_ign_cond_document["description"])
+
+                # Add sofeq_gate to sofr_gate
+                sofr_gate["inputs"].append(sofeq_gate)
                 # Append fir_rand_documents to sofr_gate
                 for fir_rand_document in fir_rand_documents:
-
                     self.replace_placeholders(fir_rand_document, room_id, room_name, fir_rand_document["name"],
                                               fir_rand_document["description"])
                     sofr_gate["inputs"].append(fir_rand_document)
 
         # Append sofr_gate to json_obj["inputs"]
-        json_obj["inputs"].append(sofr_gate)
+        sofr_he_gate["inputs"].append(sofr_gate)
+        json_obj["inputs"].append(sofr_he_gate)
         # Return the updated SIR_doc
         return json_obj
 
@@ -473,7 +661,8 @@ class SeismicFireFaultTree:
 
         return found_items
 
-    def replace_placeholders(self, json_obj, room_id, room_name, ssc_name=None, ssc_description=None):
+    def replace_placeholders(self, json_obj, room_id, room_name=None, ssc_name=None, ssc_description=None,
+                             scenario_num=None):
         if isinstance(json_obj, dict):
             for key, value in json_obj.items():
                 if isinstance(value, str):
@@ -482,13 +671,17 @@ class SeismicFireFaultTree:
                         value = value.replace("[ssc_name]", ssc_name)
                     if ssc_description is not None:
                         value = value.replace("[ssc_description]", ssc_description)
-                    value = value.replace("[room_id]", str(room_id)).replace("[room_num]", room_name)
+                    value = value.replace("[room_id]", str(room_id))
+                    if room_name is not None:
+                        value = value.replace("[room_num]", room_name)
+                    if scenario_num is not None:
+                        value = value.replace("[scenario_num]", str(scenario_num))
                     json_obj[key] = value
                 elif isinstance(value, (dict, list)):
-                    self.replace_placeholders(value, room_id, room_name, ssc_name, ssc_description)
+                    self.replace_placeholders(value, room_id, room_name, ssc_name, ssc_description, scenario_num)
         elif isinstance(json_obj, list):
             for item in json_obj:
-                self.replace_placeholders(item, room_id, room_name, ssc_name, ssc_description)
+                self.replace_placeholders(item, room_id, room_name, ssc_name, ssc_description, scenario_num)
 
     def remove_object_ids(self, obj):
         if isinstance(obj, dict):
@@ -536,14 +729,40 @@ class SeismicFireFaultTree:
 
         # Add Failure of sprinkler activation events
         fire_sprinkler_failure_gate["inputs"].append(copy.deepcopy(self.fire_sprinkler_collection.find_one({"type": "FIR_SPR_RAND"})))
-        fire_sprinkler_failure_gate["inputs"].append(copy.deepcopy(self.fire_sprinkler_collection.find_one({"type": "FIR-DET"})))
+        #fire_sprinkler_failure_gate["inputs"].append(copy.deepcopy(self.fire_sprinkler_collection.find_one({"type": "FIR-DET"})))
 
-        self.replace_placeholders(fire_sprinkler_failure_gate,room_id,room_num,ssc_name,ssc_description)
+        self.replace_placeholders(fire_sprinkler_failure_gate,room_id,room_num,ssc_name,ssc_description,scenario_num=None)
         self.remove_object_ids(fire_sprinkler_failure_gate)
         return fire_sprinkler_failure_gate
 
 
 
+    def change_fault_tree_logic_type(self, document, room_id, identifier, new_logic_type):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_change_logic_type(d):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Change the logic type to the new logic type
+                    d['logic_type'] = new_logic_type
+                    return True  # Found and updated, no need to search further in this branch
+
+                for key in d:
+                    # Recurse into the dictionary
+                    if search_and_change_logic_type(d[key]):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each dictionary within
+                for item in d:
+                    if search_and_change_logic_type(item):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the updated document
+        search_and_change_logic_type(document)
+        return document
 
 
 
@@ -581,6 +800,38 @@ class SeismicFireFaultTree:
         return node_data
 
 
+    def remove_fault_tree_by_id_and_room_id(self, document, room_id, identifier):
+        # This helper function will be used to recursively search for the dictionary
+        def search_and_remove(d, parent=None, key=None):
+            if isinstance(d, dict):
+                # Check if this dictionary is the one we're looking for
+                if d.get('id') == identifier and d.get('room_id') == room_id:
+                    # Remove the dictionary from its parent list or dict.
+                    if parent is not None and key is not None:
+                        if isinstance(parent, list):
+                            parent.remove(d)
+                        elif isinstance(parent, dict):
+                            del parent[key]
+                    return True  # Found and removed, no need to search further in this branch
+
+                for key in d:
+                    # Recurse into the dictionary
+                    if search_and_remove(d[key], d, key):
+                        return True  # Propagate the positive search result up the call stack
+
+            elif isinstance(d, list):
+                # Iterate over the list and search each dictionary within
+                for item in d:
+                    if search_and_remove(item, d, d.index(item)):
+                        return True  # Propagate the positive search result up
+
+            return False  # Not found in this branch
+
+        # Call the helper function and return the updated document
+        search_and_remove(document)
+        return document
+
+
 # Custom JSON Encoder to handle ObjectId
 class JSONEncoder(json.JSONEncoder):
     def default(self, o):
@@ -592,25 +843,26 @@ def main():
     mongodb_uri = 'mongodb+srv://akramsaid:Narcos99@myatlasclusteredu.nzilawl.mongodb.net/'
     fire_db_name = 'seismic_induced_fire_database'
     general_db_name = 'MultiHazards_PRA_General'
-    seismic_event_instance = SeismicEvent(mongodb_uri, general_db_name) #
+    seismic_event_instance = SeismicEvent(mongodb_uri, general_db_name)
 
     # Usage example
-    tree = SeismicFireFaultTree(mongodb_uri, fire_db_name,seismic_event_instance)
+    tree = SeismicFireFaultTree(mongodb_uri, fire_db_name, seismic_event_instance)
 
-    tree.fire_room_gate()  # This method doesn't return anything, so no need to pass it to scan_json_for_id
+    # Call the scenario method
+    ssc_fault_tree_result = tree.ssc_fault_tree_scenarios()
 
-    tree.propagation_from_one_room_gate()
-    tree.propagation_to_room()
     ft = TreeBuilder(mongodb_uri, general_db_name)
 
-
-    json_fault_trees = [tree.ssc_fault_tree()["CMP-FR-12"]]
+    json_fault_trees = [ssc_fault_tree_result["CMP-FR-12"], ssc_fault_tree_result["CMP-FR-9"]]
     for json_fault_tree in json_fault_trees:
+        print(json_fault_tree)
         # Applying the seismic_fire_fault_tree class on seismic-induced fire fault tree json object
         ft.build_tree(json_fault_tree)
-        print(json_fault_tree)
+
         # Print the tree hierarchy with node information
         current_dir = os.path.dirname(os.path.abspath(__file__))
         ft.write_mard("seismic_induced_fire", current_dir)
+
 if __name__ == "__main__":
     main()
+
